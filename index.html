@@ -476,7 +476,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
           <table class="table">
             <thead><tr>
               <th style="width:36px"><input type="checkbox" id="intake-select-all" onchange="intakeToggleAll(this.checked)" style="cursor:pointer"/></th>
-              <th>Order Ref</th><th>Client</th><th>Category</th><th>Priority</th><th>Delivery Slot</th><th>SLA Cutoff</th><th>Qty / SKUs</th><th>Est. Value</th><th>Notes</th><th>Status</th><th>Actions</th>
+              <th>Order Ref</th><th>Client</th><th>Category</th><th>Priority</th><th>Delivery Slot</th><th>SLA Cutoff</th><th>Qty / SKUs</th><th>Weight</th><th>Est. Value</th><th>Notes</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody id="intake-tbody"></tbody>
           </table>
@@ -504,19 +504,19 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         </div>
         <div id="panel-unassigned"><div class="prod-panel">
           <div class="prod-panel-header"><span class="prod-panel-title">📋 Unassigned Orders</span><button class="btn btn-primary btn-sm" onclick="openCreateOrder()">+ New Order</button></div>
-          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Category/Pkg</th><th>Qty/SKUs</th><th>SLA</th><th>Est.Value</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="tbody-unassigned"></tbody></table></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Category/Pkg</th><th>Qty/SKUs</th><th>Weight</th><th>SLA</th><th>Est.Value</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="tbody-unassigned"></tbody></table></div>
         </div></div>
         <div id="panel-assigned" class="hidden"><div class="prod-panel">
           <div class="prod-panel-header"><span class="prod-panel-title">🔀 Assigned — Awaiting Start</span></div>
-          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Category</th><th>Team</th><th>Qty</th><th>SLA</th><th>Actions</th></tr></thead><tbody id="tbody-assigned"></tbody></table></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Category</th><th>Team</th><th>Weight</th><th>Qty</th><th>SLA</th><th>Actions</th></tr></thead><tbody id="tbody-assigned"></tbody></table></div>
         </div></div>
         <div id="panel-active" class="hidden"><div class="prod-panel">
           <div class="prod-panel-header"><span class="prod-panel-title">⚡ Orders In Progress</span></div>
-          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Team</th><th>Started</th><th>Qty Done/Total</th><th>Progress</th><th>SLA</th><th>Actions</th></tr></thead><tbody id="tbody-active"></tbody></table></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Team</th><th>Started</th><th>Weight</th><th>Qty Done/Total</th><th>Progress</th><th>SLA</th><th>Actions</th></tr></thead><tbody id="tbody-active"></tbody></table></div>
         </div></div>
         <div id="panel-done" class="hidden"><div class="prod-panel">
           <div class="prod-panel-header"><span class="prod-panel-title">✅ Completed Orders</span></div>
-          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Team</th><th>Qty/Packs</th><th>Started</th><th>Finished</th><th>Duration</th><th>QC</th></tr></thead><tbody id="tbody-done"></tbody></table></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Team</th><th>Weight (KG)</th><th>Qty/Packs</th><th>Started</th><th>Finished</th><th>Duration</th><th>QC</th></tr></thead><tbody id="tbody-done"></tbody></table></div>
         </div></div>
         <div id="panel-hold" class="hidden"><div class="prod-panel">
           <div class="prod-panel-header"><span class="prod-panel-title">⏸ Orders On Hold</span></div>
@@ -539,7 +539,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         <div class="card-header"><span class="card-title">🔍 Quality Control Queue</span></div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Ref</th><th>Client</th><th>Category</th><th>Team</th><th>Completed</th><th>Qty</th><th>QC Status</th><th>Inspector</th><th>Timestamp</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Client</th><th>Category</th><th>Team</th><th>Completed</th><th>Qty</th><th>Weight</th><th>QC Status</th><th>Inspector</th><th>Timestamp</th><th>Actions</th></tr></thead>
             <tbody id="qc-tbody"></tbody>
           </table>
         </div>
@@ -564,7 +564,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         <div class="card-header"><span class="card-title">🚚 Dispatch Queue</span></div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Ref</th><th>Client</th><th>Category</th><th>Delivery Slot</th><th>Driver</th><th>Vehicle</th><th>Status</th><th>SLA</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Client</th><th>Category</th><th>Delivery Slot</th><th>Weight</th><th>Driver</th><th>Vehicle</th><th>Status</th><th>SLA</th><th>Actions</th></tr></thead>
             <tbody id="dispatch-tbody"></tbody>
           </table>
         </div>
@@ -748,7 +748,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
       </div>
 
       <!-- KPI ROW 1: 5-card strip -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px" id="ceo-kpi-row">
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px" id="ceo-kpi-row">
         <!-- rendered by JS -->
       </div>
 
@@ -870,7 +870,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
                 <th>Linked Order</th>
                 <th>Client</th>
                 <th>Items Requested</th>
-                <th>Qty Req / Received</th>
+                <th>Qty Req / Received</th><th>Weight</th>
                 <th>Status</th>
                 <th>Requested By</th>
                 <th>Requested At</th>
@@ -923,6 +923,11 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
       <div class="form-group"><label class="form-label">Total Qty (units)</label><input class="form-control" id="ord-qty" type="number" min="1" placeholder="120"/></div>
       <div class="form-group"><label class="form-label">Pack Size</label><input class="form-control" id="ord-packsize" type="number" min="1" placeholder="10"/></div>
       <div class="form-group"><label class="form-label">SKU Count</label><input class="form-control" id="ord-skus" type="number" min="1" placeholder="5"/></div>
+    </div>
+    <div class="grid-3">
+      <div class="form-group"><label class="form-label">Total Weight (KG)</label><input class="form-control" id="ord-weight" type="number" min="0" step="0.1" placeholder="e.g. 250"/></div>
+      <div class="form-group"><label class="form-label">Wt per Pack (KG)</label><input class="form-control" id="ord-weight-per-pack" type="number" min="0" step="0.1" placeholder="e.g. 20.5"/></div>
+      <div class="form-group"><label class="form-label">Wt per Unit (KG)</label><input class="form-control" id="ord-weight-per-unit" type="number" min="0" step="0.01" placeholder="e.g. 2.0"/></div>
     </div>
     <div class="grid-3">
       <div class="form-group"><label class="form-label">Delivery Slot</label><select class="form-control" id="ord-slot"><option value="Morning">Morning (6-10am)</option><option value="Afternoon">Afternoon (12-4pm)</option><option value="Evening">Evening (6-10pm)</option></select></div>
@@ -1093,6 +1098,10 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         <input class="form-control" id="wh-qty-req" type="number" min="1" placeholder="100"/>
       </div>
       <div class="form-group">
+        <label class="form-label">Total Weight (KG)</label>
+        <input class="form-control" id="wh-weight" type="number" min="0" step="0.1" placeholder="e.g. 200"/>
+      </div>
+      <div class="form-group">
         <label class="form-label">Unit</label>
         <select class="form-control" id="wh-unit">
           <option>Boxes</option><option>Crates</option><option>Bags</option><option>Pallets</option><option>Cartons</option><option>Units</option>
@@ -1148,6 +1157,10 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         <label class="form-label">Qty Actually Received</label>
         <input class="form-control" id="wh-qty-received" type="number" min="0" oninput="whCheckPartial()"/>
         <div style="font-size:10px;color:var(--text3);margin-top:3px" id="wh-qty-hint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Weight Received (KG)</label>
+        <input class="form-control" id="wh-recv-weight" type="number" min="0" step="0.1" placeholder="Actual weight received"/>
       </div>
       <div class="form-group">
         <label class="form-label">Received By (Staff)</label>
@@ -1524,6 +1537,7 @@ function renderIntake(){
     <td><span class="badge badge-blue">${o.slot}</span></td>
     <td>${fmtSLA(o.sla)}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.totalQty}u / ${o.skus} SKUs</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${o.weightKg?o.weightKg+'<span style=\'font-size:9px;color:var(--text3)\'>kg</span>':'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">AED ${(o.value||0).toLocaleString()}</td>
     <td style="font-size:11px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis">${o.notes||'—'}</td>
     <td>${o.sent?'<span class="badge badge-green">✓ Sent</span>':'<span class="badge badge-gray">Pending</span>'}</td>
@@ -1557,6 +1571,7 @@ function sendToProduction(id){
   orders.push({
     id:ordIdCounter++,ref:o.ref,cat:o.cat,pkg:o.pkg,priority:o.priority,
     totalQty:o.totalQty,doneQty:0,packSize:o.packSize||10,skus:o.skus,
+    weightKg:o.weightKg||0,weightPerPack:o.weightPerPack||0,weightPerUnit:o.weightPerUnit||0,
     client:o.client,value:o.value,notes:o.notes,slot:o.slot,sla:o.sla,
     status:'unassigned',team:null,
     createdTime:nowStr(),startTime:null,endTime:null,
@@ -1610,6 +1625,9 @@ function simulateImport(){
       packSize:5+Math.floor(Math.random()*15),
       skus:1+Math.floor(Math.random()*8),
       value:500+Math.floor(Math.random()*4500),
+      weightKg:Math.round((10+Math.random()*490)*10)/10,
+      weightPerPack:Math.round((5+Math.random()*25)*10)/10,
+      weightPerUnit:Math.round((0.5+Math.random()*5)*100)/100,
       notes:Math.random()>0.6?'Refrigerated transport required':'',
       sent:false,
       createdTime:nowStr()
@@ -1647,6 +1665,9 @@ function saveOrder(){
     totalQty:qty,doneQty:0,
     packSize:parseInt(document.getElementById('ord-packsize').value)||10,
     skus:parseInt(document.getElementById('ord-skus').value)||1,
+    weightKg:parseFloat(document.getElementById('ord-weight').value)||0,
+    weightPerPack:parseFloat(document.getElementById('ord-weight-per-pack').value)||0,
+    weightPerUnit:parseFloat(document.getElementById('ord-weight-per-unit').value)||0,
     client:document.getElementById('ord-client').value,
     value:parseInt(document.getElementById('ord-value').value)||0,
     notes:document.getElementById('ord-notes').value,
@@ -1870,6 +1891,7 @@ function renderOrders(){
     <td>${priorityBadge(o.priority)}</td>
     <td>${o.cat}<br/><span style="font-size:10px;color:var(--text3)">${o.pkg}</span></td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.totalQty}u / ${o.skus||'—'} SKU</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px">${o.weightKg?`<span style="color:var(--ffc-green3);font-weight:700">${o.weightKg}</span><span style="font-size:9px;color:var(--text3)"> kg</span>`:'—'}</td>
     <td>${fmtSLA(o.sla)}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.value?'AED '+o.value.toLocaleString():'—'}</td>
     <td style="font-size:10px;color:var(--text3);max-width:100px">${o.notes||'—'}</td>
@@ -1888,6 +1910,7 @@ function renderOrders(){
     <td>${priorityBadge(o.priority)}</td>
     <td>${o.cat}<br/><span style="font-size:10px;color:var(--text3)">${o.pkg}</span></td>
     <td><span class="badge" style="background:${teamColor(o.team)};color:${teamTextColor(o.team)};border:none">${o.team}</span></td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px">${o.weightKg?o.weightKg+' kg':'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.totalQty}</td>
     <td>${fmtSLA(o.sla)}</td>
     <td style="white-space:nowrap">
@@ -1908,6 +1931,7 @@ function renderOrders(){
       <td>${priorityBadge(o.priority)}</td>
       <td><span class="badge" style="background:${teamColor(o.team)};color:${teamTextColor(o.team)};border:none">${o.team}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${o.startTime}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${o.weightKg?o.weightKg+' kg':'—'}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px">${o.doneQty}/${o.totalQty}</td>
       <td style="min-width:100px"><div class="progress-wrap"><div class="progress-bar${p>=100?' done':''}" style="width:${p}%"></div></div><span style="font-size:10px;color:var(--text3)">${p}%</span></td>
       <td>${fmtSLA(o.sla)}</td>
@@ -1921,6 +1945,7 @@ function renderOrders(){
     <td><strong style="font-family:'DM Mono',monospace;font-size:11px">${o.ref}</strong><br/><span style="font-size:10px;color:var(--text3)">${o.client||'—'}</span></td>
     <td style="font-size:12px">${o.client||'—'}</td>
     <td><span class="badge" style="background:${teamColor(o.team)};color:${teamTextColor(o.team)};border:none">${o.team||'—'}</span></td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3);font-weight:700">${o.weightKg?o.weightKg+' kg':'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.doneQty}u / ${o.packSize?Math.ceil(o.doneQty/o.packSize):'—'}pk</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${o.startTime||'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.endTime||'—'}</td>
@@ -1982,6 +2007,7 @@ function renderQC(){
       <td><span class="badge" style="background:${teamColor(o.team)};color:${teamTextColor(o.team)};border:none">${o.team||'—'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:11px">${o.endTime||'—'}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px">${o.doneQty}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${o.weightKg?o.weightKg+' kg':'—'}</td>
       <td><span class="qc-pending">⏳ Pending</span></td>
       <td>—</td><td>—</td>
       <td><button class="btn btn-xs btn-primary" onclick="openQCModal(${o.id})">🔍 Inspect</button></td>
@@ -2059,6 +2085,7 @@ function renderDispatch(){
     <td style="font-size:12px">${o.client||'—'}</td>
     <td>${o.cat}</td>
     <td><span class="badge badge-blue">${o.slot||'—'}</span></td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700">${o.weightKg?o.weightKg+' kg':'—'}</td>
     <td style="font-size:12px">${o.driver||'—'}</td>
     <td style="font-size:12px">${o.vehicle||'—'}</td>
     <td>${o.dispatchStatus==='delivered'?'<span class="ds-delivered">✅ Delivered</span>':o.dispatchStatus==='dispatched'?'<span class="ds-dispatched">🚚 Dispatched</span>':'<span class="ds-ready">📦 Ready</span>'}</td>
@@ -2112,6 +2139,7 @@ function prepareDeliveryNote(id){
         <div><b>Client:</b> ${ord.client||'—'}</div><div><b>Slot:</b> ${ord.slot||'—'}</div>
         <div><b>Category:</b> ${ord.cat}</div><div><b>Packaging:</b> ${ord.pkg}</div>
         <div><b>Total Qty:</b> ${ord.doneQty} units</div><div><b>Packs:</b> ${ord.packSize?Math.ceil(ord.doneQty/ord.packSize):'—'}</div>
+        <div><b>Total Weight:</b> ${ord.weightKg?ord.weightKg+' KG':'—'}</div><div><b>Wt/Pack:</b> ${ord.weightPerPack?ord.weightPerPack+' KG':'—'}</div>
         <div><b>QC Status:</b> ${ord.qcStatus||'—'}</div><div><b>Driver:</b> ${ord.driver||'TBD'}</div>
       </div>
       <div style="border-top:1px solid #333;padding-top:12px;font-size:11px">
@@ -2223,12 +2251,13 @@ function renderReportSummary(){
   document.getElementById('r-breaks').textContent=breakLogs.length;
   const el=document.getElementById('report-overview');if(!el)return;
   if(!orders.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Create and process orders to see reports</p></div>';return;}
-  el.innerHTML=`<table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Team</th><th>Category</th><th>Progress</th><th>Status</th><th>Value</th></tr></thead><tbody>
+  el.innerHTML=`<table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>Team</th><th>Category</th><th>Weight</th><th>Progress</th><th>Status</th><th>Value</th></tr></thead><tbody>
     ${orders.map(o=>`<tr><td style="font-family:'DM Mono',monospace;font-size:11px">${o.ref}</td>
     <td style="font-size:12px">${o.client||'—'}</td>
     <td>${priorityBadge(o.priority)}</td>
     <td>${o.team?`<span class="badge" style="background:${teamColor(o.team)};color:${teamTextColor(o.team)};border:none">${o.team}</span>`:'—'}</td>
     <td style="font-size:12px">${o.cat}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px">${o.weightKg?'<span style="color:var(--ffc-green3);font-weight:700">'+o.weightKg+'</span> kg':'—'}</td>
     <td><div class="progress-wrap" style="width:80px"><div class="progress-bar${pct(o.doneQty,o.totalQty)>=100?' done':''}" style="width:${pct(o.doneQty,o.totalQty)}%"></div></div> ${pct(o.doneQty,o.totalQty)}%</td>
     <td><span class="badge ${o.status==='done'?'badge-green':o.status==='active'?'badge-amber':o.status==='hold'?'badge-orange':'badge-gray'}">${o.status}</span></td>
     <td style="font-family:'DM Mono',monospace;font-size:11px">${o.value?'AED '+o.value.toLocaleString():'—'}</td></tr>`).join('')}
@@ -2398,6 +2427,11 @@ function renderPersonalProductivity(){
     const wmSec = prod.reduce((a,p)=>a+p.workMins,0)*60;   // total work SECONDS
     const packs = prod.reduce((a,p)=>a+p.packs,0);
     const units = prod.reduce((a,p)=>a+p.units,0);
+    // Weight from linked orders
+    const totalWeightKg = prod.reduce((a,p)=>{
+      const ord=orders.find(o=>o.ref===p.ref);
+      return a+(ord&&ord.weightKg?ord.weightKg:0);
+    },0);
 
     // Break data
     const breaks     = breakLogs.filter(l=>l.status==='done'&&l.staff.pin===s.pin);
@@ -2476,23 +2510,27 @@ function renderPersonalProductivity(){
         </div>`:''}
       </div>
 
-      <!-- ── 4 SECONDARY METRICS ── -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border)">
+      <!-- ── 5 SECONDARY METRICS ── -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)">
         <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-          <div style="font-size:15px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3);line-height:1">${wmSec}</div>
+          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3);line-height:1">${wmSec}</div>
           <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Work (s)</div>
         </div>
         <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border);background:#FFFDF5">
-          <div style="font-size:15px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber);line-height:1">${bmSec}</div>
+          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber);line-height:1">${bmSec}</div>
           <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Break (s)</div>
         </div>
         <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-          <div style="font-size:15px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green4);line-height:1">${packs}</div>
+          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green4);line-height:1">${packs}</div>
           <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Packs</div>
         </div>
-        <div style="padding:10px 6px;text-align:center">
-          <div style="font-size:15px;font-weight:800;font-family:'DM Mono',monospace;color:#1565C0;line-height:1">${units}</div>
+        <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
+          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:#1565C0;line-height:1">${units}</div>
           <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Units</div>
+        </div>
+        <div style="padding:10px 6px;text-align:center">
+          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3);line-height:1">${totalWeightKg>0?totalWeightKg:'—'}</div>
+          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">KG</div>
         </div>
       </div>
 
@@ -2538,10 +2576,11 @@ function renderPersonalProductivity(){
         <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px">📦 Per-Order Speed</div>
         ${orderRows.length ? orderRows.map(p=>{
           const c2=speedColor(p.sp);
+          const ordW=orders.find(o=>o.ref===p.ref);
           return`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:6px 9px;background:var(--bg2);border-radius:8px;margin-bottom:4px">
             <div>
               <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--ffc-green3)">${p.ref}</div>
-              <div style="font-size:9px;color:var(--text3);margin-top:1px">${p.packs} packs · ${p.units} units · ${p.ws}s work</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:1px">${p.packs} packs · ${p.units} units · ${p.ws}s work${ordW&&ordW.weightKg?' · <strong style=\'color:var(--ffc-green3)\'>' + ordW.weightKg + ' kg</strong>':''}</div>
             </div>
             <div style="text-align:center">
               <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:${c2};line-height:1">${p.sp!==null?p.sp:'—'}</div>
@@ -2850,19 +2889,19 @@ function seedData(){
   // Intake orders
   const slaBase=new Date();
   intakeOrders=[
-    {id:100,ref:'ORD-85421',cat:'Fruits',pkg:'Boxes',client:'Novotel Dubai',priority:'urgent',slot:'Morning',sla:`${String(slaBase.getHours()+1).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,totalQty:120,packSize:10,skus:4,value:3600,notes:'Refrigerated transport required',sent:true,createdTime:'07:00'},
-    {id:101,ref:'ORD-85422',cat:'Vegetables',pkg:'Crates',client:'JW Marriott',priority:'high',slot:'Morning',sla:`${String(slaBase.getHours()+2).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,totalQty:80,packSize:5,skus:6,value:2400,notes:'',sent:true,createdTime:'07:15'},
-    {id:102,ref:'ORD-85423',cat:'Herbs',pkg:'Bags',client:'Four Seasons',priority:'normal',slot:'Afternoon',sla:'14:00',totalQty:40,packSize:8,skus:3,value:800,notes:'',sent:false,createdTime:'07:30'},
-    {id:103,ref:'ORD-85424',cat:'Mixed',pkg:'Pallets',client:'Atlantis',priority:'high',slot:'Afternoon',sla:'16:00',totalQty:200,packSize:20,skus:12,value:5200,notes:'Heavy items, need forklift',sent:false,createdTime:'07:45'},
-    {id:104,ref:'ORD-85425',cat:'Frozen',pkg:'Cartons',client:'Hyatt Regency',priority:'normal',slot:'Evening',sla:'20:00',totalQty:60,packSize:6,skus:5,value:1800,notes:'Frozen chain must not be broken',sent:false,createdTime:'08:00'},
+    {id:100,ref:'ORD-85421',cat:'Fruits',pkg:'Boxes',client:'Novotel Dubai',priority:'urgent',slot:'Morning',sla:`${String(slaBase.getHours()+1).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,totalQty:120,packSize:10,skus:4,value:3600,notes:'Refrigerated transport required',sent:true,createdTime:'07:00',weightKg:360,weightPerPack:30,weightPerUnit:3},
+    {id:101,ref:'ORD-85422',cat:'Vegetables',pkg:'Crates',client:'JW Marriott',priority:'high',slot:'Morning',sla:`${String(slaBase.getHours()+2).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,totalQty:80,packSize:5,skus:6,value:2400,notes:'',sent:true,createdTime:'07:15',weightKg:200,weightPerPack:12.5,weightPerUnit:2.5},
+    {id:102,ref:'ORD-85423',cat:'Herbs',pkg:'Bags',client:'Four Seasons',priority:'normal',slot:'Afternoon',sla:'14:00',totalQty:40,packSize:8,skus:3,value:800,notes:'',sent:false,createdTime:'07:30',weightKg:80,weightPerPack:10,weightPerUnit:2},
+    {id:103,ref:'ORD-85424',cat:'Mixed',pkg:'Pallets',client:'Atlantis',priority:'high',slot:'Afternoon',sla:'16:00',totalQty:200,packSize:20,skus:12,value:5200,notes:'Heavy items, need forklift',sent:false,createdTime:'07:45',weightKg:600,weightPerPack:15,weightPerUnit:3},
+    {id:104,ref:'ORD-85425',cat:'Frozen',pkg:'Cartons',client:'Hyatt Regency',priority:'normal',slot:'Evening',sla:'20:00',totalQty:60,packSize:6,skus:5,value:1800,notes:'Frozen chain must not be broken',sent:false,createdTime:'08:00',weightKg:90,weightPerPack:9,weightPerUnit:1.5},
   ];
   ordIdCounter=200;
   // Production orders (already sent)
   orders=[
-    {id:ordIdCounter++,ref:'ORD-85421',cat:'Fruits',pkg:'Boxes',priority:'urgent',totalQty:120,doneQty:87,packSize:10,skus:4,client:'Novotel Dubai',value:3600,notes:'Refrigerated',slot:'Morning',sla:`${String(slaBase.getHours()+1).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,status:'active',team:'Team A',createdTime:'07:00',startTime:'07:30',startMs:Date.now()-3600000,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null},
-    {id:ordIdCounter++,ref:'ORD-85422',cat:'Vegetables',pkg:'Crates',priority:'high',totalQty:80,doneQty:80,packSize:5,skus:6,client:'JW Marriott',value:2400,notes:'',slot:'Morning',sla:'10:00',status:'done',team:'Team B',createdTime:'07:15',startTime:'07:45',startMs:Date.now()-7200000,endTime:'09:15',endMs:Date.now()-3600000,durationMins:90,qcStatus:'pass',dispatchStatus:'ready'},
-    {id:ordIdCounter++,ref:'ORD-85426',cat:'Dry Goods',pkg:'Boxes',priority:'normal',totalQty:50,doneQty:0,packSize:10,skus:3,client:'Jumeirah',value:1200,notes:'',slot:'Afternoon',sla:'13:00',status:'unassigned',team:null,createdTime:'08:00',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null},
-    {id:ordIdCounter++,ref:'ORD-85427',cat:'Mixed',pkg:'Pallets',priority:'high',totalQty:200,doneQty:0,packSize:20,skus:12,client:'Atlantis',value:5200,notes:'Heavy items',slot:'Afternoon',sla:'16:00',status:'assigned',team:'Team D',createdTime:'08:30',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null},
+    {id:ordIdCounter++,ref:'ORD-85421',cat:'Fruits',pkg:'Boxes',priority:'urgent',totalQty:120,doneQty:87,packSize:10,skus:4,client:'Novotel Dubai',value:3600,notes:'Refrigerated',slot:'Morning',sla:`${String(slaBase.getHours()+1).padStart(2,'0')}:${String(slaBase.getMinutes()).padStart(2,'0')}`,status:'active',team:'Team A',createdTime:'07:00',startTime:'07:30',startMs:Date.now()-3600000,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null,weightKg:360,weightPerPack:30,weightPerUnit:3},
+    {id:ordIdCounter++,ref:'ORD-85422',cat:'Vegetables',pkg:'Crates',priority:'high',totalQty:80,doneQty:80,packSize:5,skus:6,client:'JW Marriott',value:2400,notes:'',slot:'Morning',sla:'10:00',status:'done',team:'Team B',createdTime:'07:15',startTime:'07:45',startMs:Date.now()-7200000,endTime:'09:15',endMs:Date.now()-3600000,durationMins:90,qcStatus:'pass',dispatchStatus:'ready',weightKg:200,weightPerPack:12.5,weightPerUnit:2.5},
+    {id:ordIdCounter++,ref:'ORD-85426',cat:'Dry Goods',pkg:'Boxes',priority:'normal',totalQty:50,doneQty:0,packSize:10,skus:3,client:'Jumeirah',value:1200,notes:'',slot:'Afternoon',sla:'13:00',status:'unassigned',team:null,createdTime:'08:00',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null,weightKg:75,weightPerPack:15,weightPerUnit:1.5},
+    {id:ordIdCounter++,ref:'ORD-85427',cat:'Mixed',pkg:'Pallets',priority:'high',totalQty:200,doneQty:0,packSize:20,skus:12,client:'Atlantis',value:5200,notes:'Heavy items',slot:'Afternoon',sla:'16:00',status:'assigned',team:'Team D',createdTime:'08:30',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null,weightKg:600,weightPerPack:15,weightPerUnit:3},
   ];
   // Productivity for done order staff
   STAFF_DATA.filter(s=>s.team==='Team B').forEach(s=>{
@@ -2988,6 +3027,7 @@ function saveWHRequest(){
   const priority=document.getElementById('wh-priority').value;
   const requestedBy=document.getElementById('wh-requested-by').value;
   const notes=document.getElementById('wh-notes').value.trim();
+  const weightKg=parseFloat(document.getElementById('wh-weight').value)||0;
 
   if(!linkedId){ showToast('Select a linked production order','error'); return; }
   if(!items){ showToast('Enter items description','error'); return; }
@@ -3003,7 +3043,7 @@ function saveWHRequest(){
     linkedOrderRef: ord?.ref||'—',
     client: ord?.client||document.getElementById('wh-client').value||'—',
     cat: ord?.cat||'—',
-    items, qtyReq, qtyReceived: 0, unit: document.getElementById('wh-unit').value,
+    items, qtyReq, qtyReceived: 0, unit: document.getElementById('wh-unit').value, weightKg,
     priority, status: 'pending',
     requestedBy, requestedAt: new Date().toISOString(),
     requestedAtStr: nowFull(),
@@ -3204,6 +3244,7 @@ function renderWarehouse(){
           <div style="font-family:'DM Mono',monospace;font-size:11px">${r.qtyReceived}/${r.qtyReq} ${r.unit}</div>
           ${r.qtyReq>0?`<div class="progress-wrap" style="margin-top:4px;min-width:70px"><div class="progress-bar${pct2>=100?' done':pct2>0?' warn':''}" style="width:${pct2}%"></div></div>`:''}
         </td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--ffc-green3)">${r.weightKg?r.weightKg+' kg':'—'}</td>
         <td>${whStatusBadge(r.status)}</td>
         <td style="font-size:12px">${r.requestedBy}</td>
         <td style="font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap">${r.requestedAtStr}</td>
@@ -3313,12 +3354,14 @@ function _ceoKPIs(){
   const activeBreaks=breakLogs.filter(l=>l.status==='out').length;
   const violations=breakLogs.filter(l=>l.status==='done'&&l.mins>(BREAK_LIMITS[l.reason]||999)).length;
 
+  const totalWeight=orders.reduce((s,o)=>s+(o.weightKg||0),0);
   const kpis=[
     {icon:'💰',label:'Pipeline Value',val:'AED '+totalRev.toLocaleString(),sub:'AED '+completedRev.toLocaleString()+' fulfilled',color:'sc-green',barPct:totalRev>0?Math.round(completedRev/totalRev*100):0,barColor:'var(--ffc-green3)'},
     {icon:'📦',label:'Orders Today',val:orders.length,sub:doneOrders+' completed',color:'sc-blue',barPct:orders.length>0?Math.round(doneOrders/orders.length*100):0,barColor:'#1565C0'},
     {icon:'⏰',label:'SLA Breaches',val:slaBreaches,sub:slaBreaches===0?'All on time':'⚠ Action needed',color:slaBreaches>0?'sc-red':'sc-green',barPct:0,barColor:'var(--ffc-red)'},
     {icon:'☕',label:'Staff Out Now',val:activeBreaks,sub:violations+' policy violations',color:activeBreaks>3?'sc-red':'sc-amber',barPct:0,barColor:'var(--ffc-amber)'},
-    {icon:'🔍',label:'QC Pass Rate',val:(()=>{const q=orders.filter(o=>o.qcStatus);return q.length?Math.round(q.filter(o=>o.qcStatus==='pass').length/q.length*100)+'%':'—';})(),sub:'Quality control today',color:'sc-purple',barPct:0,barColor:'#6A1B9A'},
+    {icon:'⚖️',label:'Total Weight (KG)',val:totalWeight.toLocaleString()+' kg',sub:orders.filter(o=>o.status==='done').reduce((s,o)=>s+(o.weightKg||0),0).toLocaleString()+' kg fulfilled',color:'sc-purple',barPct:orders.length>0?Math.round(orders.filter(o=>o.status==='done').reduce((s,o)=>s+(o.weightKg||0),0)/(totalWeight||1)*100):0,barColor:'#6A1B9A'},
+    {icon:'🔍',label:'QC Pass Rate',val:(()=>{const q=orders.filter(o=>o.qcStatus);return q.length?Math.round(q.filter(o=>o.qcStatus==='pass').length/q.length*100)+'%':'—';})(),sub:'Quality control today',color:'sc-gray',barPct:0,barColor:'var(--text3)'},
   ];
 
   el.innerHTML=kpis.map(k=>`
