@@ -316,6 +316,9 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
   .tb-search{display:none}
 }
 
+/* ─── KIOSK COUNTDOWN ─── */
+@keyframes countdown3s{from{width:100%}to{width:0%}}
+
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -2970,6 +2973,7 @@ function renderKiosk(){
   else if(kioskState==='reason')card.innerHTML=renderKioskReason();
   else if(kioskState==='out')card.innerHTML=renderKioskOut();
   else if(kioskState==='done')card.innerHTML=renderKioskDone();
+  else if(kioskState==='checkout_done')card.innerHTML=renderKioskCheckoutDone();
   if(kioskState==='out')startKioskTimer();
 }
 function renderKioskIdle(){
@@ -3074,7 +3078,7 @@ function renderKioskDone(){
         <span style="color:var(--text3)">Time</span><span style="font-family:'DM Mono',monospace;font-size:11px">${last.outTime} → ${last.inTime}</span>
       </div>
     </div>
-    <button type="button" class="k-big-btn k-go" onclick="kioskGoBack('idle')">Done</button>
+    <button type="button" class="k-big-btn k-go" onclick="kioskState='idle';kioskPin='';kioskFoundStaff=null;kioskReason='';renderKiosk()">↩ Back to Home</button>
   </div>`;}
 
 function kioskPressKey(k){
@@ -3092,12 +3096,24 @@ function kioskGoBack(state){
 function doKioskCheckout(){
   if(!kioskFoundStaff||!kioskReason)return;
   const entry={id:kioskBreakIdCounter++,name:kioskFoundStaff.name,team:kioskFoundStaff.team,staff:kioskFoundStaff,reason:kioskReason,outTime:nowStr(),startMs:Date.now(),status:'out',inTime:'',mins:0};
-  kioskCurrentOut=entry;breakLogs.push(entry);kioskState='out';renderKiosk();startKioskTimer();
+  kioskCurrentOut=entry;
+  breakLogs.push(entry);
   kioskFoundStaff.status='break';
   if(currentPage==='breaks')renderBreaks();
   addAudit('break','Check-Out',`${kioskFoundStaff.name} — ${kioskReason}`);
   saveToStorage();
-  showToast(kioskFoundStaff.name+' checked out');
+
+  // Show checkout confirmation screen briefly, then return to idle home
+  kioskState='checkout_done';
+  renderKiosk();
+  // Auto-return to idle after 3 seconds
+  setTimeout(()=>{
+    kioskState='idle';
+    kioskPin='';
+    kioskFoundStaff=null;
+    kioskReason='';
+    renderKiosk();
+  }, 3000);
 }
 function kioskValidatePin(){
   const staff=STAFF_DATA.find(s=>s.pin===kioskPin);
@@ -3123,6 +3139,14 @@ function kioskValidatePin(){
     addAudit('break','Check-In',`${staff.name} — ${mins}m break`);
     saveToStorage();
     showToast(staff.name+' checked in · '+mins+'m');
+    // Auto-return to idle home after 3 seconds
+    setTimeout(()=>{
+      kioskState='idle';
+      kioskPin='';
+      kioskFoundStaff=null;
+      kioskReason='';
+      renderKiosk();
+    }, 3000);
     return;
   }
   kioskPin='';kioskReason='';kioskState='reason';renderKiosk();
@@ -3138,6 +3162,45 @@ function startKioskTimer(){
     const limit=BREAK_LIMITS[kioskCurrentOut.reason]||999;
     el.className='out-timer-big'+(m>=limit?' warn':'');
   },1000);
+}
+
+function renderKioskCheckoutDone(){
+  if(!kioskCurrentOut)return'';
+  const r=REASONS.find(x=>x.key===kioskCurrentOut.reason);
+  const limit=BREAK_LIMITS[kioskCurrentOut.reason]||999;
+  return`
+    <div style="text-align:center;padding:10px 0">
+      <!-- Success icon -->
+      <div style="width:64px;height:64px;border-radius:50%;background:#E8F5E9;border:3px solid #A5D6A7;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px">✅</div>
+
+      <div style="font-size:18px;font-weight:800;color:var(--ffc-green3);margin-bottom:4px">Checked Out!</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px">${kioskCurrentOut.name}</div>
+
+      <!-- Summary card -->
+      <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:left;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--text3)">Break Reason</span>
+          <span style="font-weight:700">${r?r.icon+' '+r.label:kioskCurrentOut.reason}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--text3)">Checked Out At</span>
+          <span style="font-weight:700;font-family:'DM Mono',monospace">${kioskCurrentOut.outTime}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
+          <span style="color:var(--text3)">Policy Limit</span>
+          <span style="font-weight:700;color:var(--ffc-amber)">${limit<999?limit+'m':'No limit'}</span>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Returning to home screen in 3 seconds...</div>
+
+      <!-- Countdown bar -->
+      <div style="background:var(--bg2);border-radius:99px;height:4px;overflow:hidden;margin-bottom:14px">
+        <div style="height:100%;background:var(--ffc-green3);border-radius:99px;animation:countdown3s 3s linear forwards"></div>
+      </div>
+
+      <button type="button" class="k-big-btn k-go" onclick="kioskState='idle';kioskPin='';kioskFoundStaff=null;kioskReason='';renderKiosk()">↩ Back to Home Now</button>
+    </div>`;
 }
 
 // ─────────── SEED DATA ───────────
