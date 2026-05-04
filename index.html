@@ -371,6 +371,10 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
       <span class="nav-icon">📥</span> Order Intake
       <span id="nav-intake-badge" class="nav-badge hidden">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('warehouse')" id="nav-warehouse">
+      <span class="nav-icon">🏭</span> Warehouse Requests
+      <span id="nav-wh-badge" class="nav-badge hidden">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('productivity')" id="nav-productivity">
       <span class="nav-icon">📦</span> Productivity
     </a>
@@ -815,6 +819,85 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
 
     </div>
 
+
+    <!-- ═══════════════════════════════════════
+         WAREHOUSE REQUESTS PAGE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-warehouse">
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card sc-blue"><div class="stat-card-top"><div class="stat-icon-wrap">🏭</div><div class="stat-val" id="wh-total">0</div><div class="stat-lbl">Total Requests</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-amber"><div class="stat-card-top"><div class="stat-icon-wrap">⏳</div><div class="stat-val" id="wh-pending">0</div><div class="stat-lbl">Pending</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-purple"><div class="stat-card-top"><div class="stat-icon-wrap">🚛</div><div class="stat-val" id="wh-transit">0</div><div class="stat-lbl">In Transit</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-green"><div class="stat-card-top"><div class="stat-icon-wrap">✅</div><div class="stat-val" id="wh-received">0</div><div class="stat-lbl">Received</div></div><div class="stat-card-bar"></div></div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🏭 Warehouse Requests — Main Warehouse → HORECA</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="openCreateWHRequest()">+ New Request</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:10px 16px">
+          <div class="filter-bar">
+            <select class="filter-select" id="wh-filter-status" onchange="renderWarehouse()">
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="picking">Picking</option>
+              <option value="transit">In Transit</option>
+              <option value="received">Received</option>
+              <option value="partial">Partial</option>
+            </select>
+            <select class="filter-select" id="wh-filter-order" onchange="renderWarehouse()">
+              <option value="">All Orders</option>
+            </select>
+            <input class="filter-select" id="wh-search" type="text" placeholder="🔍 Search ref, item..." oninput="renderWarehouse()" style="width:180px"/>
+            <button class="btn btn-secondary btn-sm" onclick="clearWHFilters()">Clear</button>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ Export</button>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>WH Ref</th>
+                <th>Linked Order</th>
+                <th>Client</th>
+                <th>Items Requested</th>
+                <th>Qty Req / Received</th>
+                <th>Status</th>
+                <th>Requested By</th>
+                <th>Requested At</th>
+                <th>Received At</th>
+                <th>Receive Location</th>
+                <th>ETA</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wh-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Receive log -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">📋 Receive Log</span></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>WH Ref</th><th>Order Ref</th><th>Client</th><th>Items</th><th>Qty Received</th><th>Location</th><th>Received By</th><th>Received At</th><th>Condition</th></tr></thead>
+            <tbody id="wh-log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </main>
 </div><!-- /app -->
@@ -965,6 +1048,172 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
   <div class="modal-header"><span class="modal-title">🖨 Delivery Note Preview</span><button class="modal-close" onclick="closeAllModals()">✕</button></div>
   <div class="modal-body" id="print-content" style="font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;background:#fff;padding:20px;border:1px solid var(--border);border-radius:8px"></div>
   <div class="modal-footer"><button class="btn btn-secondary" onclick="closeAllModals()">Close</button><button class="btn btn-primary" onclick="window.print()">🖨 Print</button></div>
+</div>
+
+
+<!-- CREATE WH REQUEST MODAL -->
+<div class="modal modal-lg hidden" id="modal-wh-create">
+  <div class="modal-header">
+    <span class="modal-title">🏭 New Warehouse Request</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">WH Request Ref</label>
+        <input class="form-control" id="wh-ref" placeholder="WHR-00001" readonly style="background:var(--bg2)"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Linked Production Order</label>
+        <select class="form-control" id="wh-linked-order" onchange="whAutoFillClient()">
+          <option value="">— Select Order —</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Client (auto-filled)</label>
+        <input class="form-control" id="wh-client" placeholder="Auto from order" readonly style="background:var(--bg2)"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Requested By (Staff)</label>
+        <select class="form-control" id="wh-requested-by">
+          <option>Ahmed Khalid</option><option>Sara Mansoor</option><option>Khalid Rashid</option>
+          <option>Fatima Al Zaabi</option><option>Omar Hassan</option><option>Noor Khalil</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Items / Description</label>
+      <input class="form-control" id="wh-items" placeholder="e.g. Mixed Fruits Boxes, Vegetable Crates, Herb Bags"/>
+    </div>
+    <div class="grid-3">
+      <div class="form-group">
+        <label class="form-label">Qty Requested</label>
+        <input class="form-control" id="wh-qty-req" type="number" min="1" placeholder="100"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit</label>
+        <select class="form-control" id="wh-unit">
+          <option>Boxes</option><option>Crates</option><option>Bags</option><option>Pallets</option><option>Cartons</option><option>Units</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-control" id="wh-priority">
+          <option value="normal">✓ Normal</option>
+          <option value="high">⚠ High</option>
+          <option value="urgent">🚨 Urgent</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Expected Arrival (ETA)</label>
+        <input class="form-control" id="wh-eta" type="datetime-local"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Receive Location</label>
+        <select class="form-control" id="wh-location">
+          <option>HORECA Bay 1</option>
+          <option>HORECA Bay 2</option>
+          <option>Cold Storage A</option>
+          <option>Cold Storage B</option>
+          <option>Dry Store</option>
+          <option>Loading Dock</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes / Special Instructions</label>
+      <input class="form-control" id="wh-notes" placeholder="e.g. Refrigerated truck required, fragile, keep upright..."/>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveWHRequest()">📤 Send Request to Warehouse</button>
+  </div>
+</div>
+
+<!-- RECEIVE ITEMS MODAL -->
+<div class="modal modal-lg hidden" id="modal-wh-receive">
+  <div class="modal-header">
+    <span class="modal-title">📦 Receive Items from Warehouse</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:var(--bg2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:12px" id="wh-receive-info"></div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Qty Actually Received</label>
+        <input class="form-control" id="wh-qty-received" type="number" min="0" oninput="whCheckPartial()"/>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px" id="wh-qty-hint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Received By (Staff)</label>
+        <select class="form-control" id="wh-recv-by">
+          <option>Ahmed Khalid</option><option>Sara Mansoor</option><option>Khalid Rashid</option>
+          <option>Fatima Al Zaabi</option><option>Omar Hassan</option><option>Noor Khalil</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Receive Location</label>
+        <select class="form-control" id="wh-recv-location">
+          <option>HORECA Bay 1</option>
+          <option>HORECA Bay 2</option>
+          <option>Cold Storage A</option>
+          <option>Cold Storage B</option>
+          <option>Dry Store</option>
+          <option>Loading Dock</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Received Date &amp; Time</label>
+        <input class="form-control" id="wh-recv-time" type="datetime-local"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Item Condition</label>
+      <select class="form-control" id="wh-condition">
+        <option value="good">✅ Good — All items intact</option>
+        <option value="partial_damage">⚠ Partial Damage — Some items damaged</option>
+        <option value="damaged">❌ Damaged — Significant damage</option>
+        <option value="short">📦 Short Delivery — Less than requested</option>
+      </select>
+    </div>
+    <div id="wh-partial-warn" class="hidden" style="background:#FFF8E1;border:1.5px solid #FFE082;border-radius:8px;padding:9px 12px;font-size:12px;color:var(--ffc-amber);font-weight:600">
+      ⚠ Partial delivery — remaining items still expected from warehouse
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Receive Notes</label>
+      <input class="form-control" id="wh-recv-notes" placeholder="Any issues, discrepancies, or observations..."/>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmWHReceive()">✅ Confirm Receipt</button>
+  </div>
+</div>
+
+<!-- WH STATUS UPDATE MODAL -->
+<div class="modal hidden" id="modal-wh-status">
+  <div class="modal-header">
+    <span class="modal-title">🔄 Update Request Status</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:var(--bg2);border-radius:9px;padding:11px;margin-bottom:14px;font-size:12px" id="wh-status-info"></div>
+    <div class="form-group">
+      <label class="form-label">New Status</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="wh-status-grid"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmWHStatus()" id="wh-status-confirm-btn" disabled>Update Status</button>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -1179,7 +1428,7 @@ function showPage(name){
   const nav=document.getElementById('nav-'+name);
   if(nav) nav.classList.add('active');
   currentPage=name;
-  const titles={intake:'Order Intake',productivity:'Productivity',qc:'Quality Control',dispatch:'Dispatch',breaks:'Break Tracker',staff:'Staff Roster',reports:'Reports & Analytics',audit:'Audit Log',ceo:'CEO Executive Dashboard'};
+  const titles={intake:'Order Intake',productivity:'Productivity',qc:'Quality Control',dispatch:'Dispatch',breaks:'Break Tracker',staff:'Staff Roster',reports:'Reports & Analytics',audit:'Audit Log',ceo:'CEO Executive Dashboard',warehouse:'Warehouse Requests'};
   const el=document.getElementById('page-title');
   if(el) el.textContent=titles[name]||name;
   if(name==='intake') renderIntake();
@@ -1191,6 +1440,7 @@ function showPage(name){
   if(name==='staff') renderStaff();
   if(name==='audit') renderAuditLog();
   if(name==='ceo') renderCEO();
+  if(name==='warehouse') renderWarehouse();
 }
 
 // ─────────── MODALS ───────────
@@ -2485,8 +2735,402 @@ function seedData(){
   ];
   addNotification('🚨 ORD-85421 is URGENT — SLA in <1 hour!','warning');
   saveToStorage();
+  seedWHData();
   renderIntake();
 }
+
+
+// ══════════════════════════════════════════════
+//  WAREHOUSE REQUESTS MODULE
+//  Flow: HORECA receives order → sends WH request
+//        → Warehouse picks → ships → HORECA receives
+//        → Records qty, time, location, linked order
+// ══════════════════════════════════════════════
+
+let warehouseRequests = [];
+let whReceiveLogs = [];
+let whIdCounter = 1;
+let editingWHId = null;
+let selectedWHStatus = null;
+
+const WH_STATUSES = [
+  { key:'pending',   label:'Pending',    icon:'⏳', color:'#E65100', bg:'#FFF3E0' },
+  { key:'approved',  label:'Approved',   icon:'✅', color:'var(--ffc-green3)', bg:'#E8F5E9' },
+  { key:'picking',   label:'Picking',    icon:'📦', color:'#1565C0', bg:'#E3F2FD' },
+  { key:'transit',   label:'In Transit', icon:'🚛', color:'#6A1B9A', bg:'#F3E5F5' },
+  { key:'received',  label:'Received',   icon:'🎉', color:'var(--ffc-green4)', bg:'#E8F5E9' },
+  { key:'partial',   label:'Partial',    icon:'⚠',  color:'var(--ffc-amber)', bg:'#FFF8E1' },
+  { key:'cancelled', label:'Cancelled',  icon:'❌', color:'var(--ffc-red)', bg:'#FFEBEE' },
+];
+
+function whStatusBadge(key){
+  const s=WH_STATUSES.find(x=>x.key===key)||{icon:'—',label:key||'—',color:'var(--text3)',bg:'var(--bg2)'};
+  return `<span style="background:${s.bg};color:${s.color};border:1px solid ${s.color}30;font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;white-space:nowrap">${s.icon} ${s.label}</span>`;
+}
+
+function whSaveToStorage(){
+  try{
+    localStorage.setItem('ffc_wh_requests',JSON.stringify(warehouseRequests));
+    localStorage.setItem('ffc_wh_logs',JSON.stringify(whReceiveLogs));
+    localStorage.setItem('ffc_wh_counter',whIdCounter);
+  }catch(e){}
+}
+
+function whLoadFromStorage(){
+  try{
+    const r=localStorage.getItem('ffc_wh_requests'); if(r) warehouseRequests=JSON.parse(r);
+    const l=localStorage.getItem('ffc_wh_logs'); if(l) whReceiveLogs=JSON.parse(l);
+    const c=localStorage.getItem('ffc_wh_counter'); if(c) whIdCounter=parseInt(c);
+  }catch(e){}
+}
+
+// ─── Populate linked-order dropdown in both modals ───
+function whPopulateOrderDropdown(selectId){
+  const sel=document.getElementById(selectId); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Select Order —</option>';
+  orders.forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.id;
+    opt.textContent=`${o.ref} · ${o.client||'—'} · ${o.cat} (${o.totalQty}u)`;
+    sel.appendChild(opt);
+  });
+  if(cur) sel.value=cur;
+}
+
+function whAutoFillClient(){
+  const sel=document.getElementById('wh-linked-order');
+  const clientEl=document.getElementById('wh-client');
+  if(!sel||!clientEl) return;
+  const ord=orders.find(o=>String(o.id)===String(sel.value));
+  if(ord){
+    clientEl.value=ord.client||'—';
+    // Auto-fill items from order
+    const itemsEl=document.getElementById('wh-items');
+    if(itemsEl&&!itemsEl.value) itemsEl.value=`${ord.cat} — ${ord.pkg}`;
+    const qtyEl=document.getElementById('wh-qty-req');
+    if(qtyEl&&!qtyEl.value) qtyEl.value=ord.totalQty;
+  } else {
+    clientEl.value='';
+  }
+}
+
+// ─── Open create modal ───
+function openCreateWHRequest(){
+  whPopulateOrderDropdown('wh-linked-order');
+  // Set defaults
+  const refEl=document.getElementById('wh-ref');
+  if(refEl) refEl.value='WHR-'+String(whIdCounter).padStart(5,'0');
+  // Set ETA to +4 hours
+  const etaEl=document.getElementById('wh-eta');
+  if(etaEl){
+    const eta=new Date(Date.now()+4*3600000);
+    etaEl.value=eta.toISOString().slice(0,16);
+  }
+  // Clear fields
+  ['wh-items','wh-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const qEl=document.getElementById('wh-qty-req');if(qEl)qEl.value='';
+  const cEl=document.getElementById('wh-client');if(cEl)cEl.value='';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-wh-create').classList.remove('hidden');
+}
+
+// ─── Save request ───
+function saveWHRequest(){
+  const linkedId=document.getElementById('wh-linked-order').value;
+  const items=document.getElementById('wh-items').value.trim();
+  const qtyReq=parseInt(document.getElementById('wh-qty-req').value)||0;
+  const eta=document.getElementById('wh-eta').value;
+  const location=document.getElementById('wh-location').value;
+  const priority=document.getElementById('wh-priority').value;
+  const requestedBy=document.getElementById('wh-requested-by').value;
+  const notes=document.getElementById('wh-notes').value.trim();
+
+  if(!linkedId){ showToast('Select a linked production order','error'); return; }
+  if(!items){ showToast('Enter items description','error'); return; }
+  if(qtyReq<1){ showToast('Enter valid quantity','error'); return; }
+
+  const ord=orders.find(o=>String(o.id)===String(linkedId));
+  const refNum='WHR-'+String(whIdCounter).padStart(5,'0');
+
+  warehouseRequests.push({
+    id: whIdCounter++,
+    ref: refNum,
+    linkedOrderId: parseInt(linkedId),
+    linkedOrderRef: ord?.ref||'—',
+    client: ord?.client||document.getElementById('wh-client').value||'—',
+    cat: ord?.cat||'—',
+    items, qtyReq, qtyReceived: 0, unit: document.getElementById('wh-unit').value,
+    priority, status: 'pending',
+    requestedBy, requestedAt: new Date().toISOString(),
+    requestedAtStr: nowFull(),
+    eta, etaStr: eta?new Date(eta).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—',
+    location, notes,
+    receivedAt: null, receivedBy: null, condition: null, receiveNotes: null
+  });
+
+  addAudit('warehouse','WH Request Sent',`${refNum} → ${ord?.ref||'—'} (${items}, ${qtyReq} ${document.getElementById('wh-unit').value})`);
+  addNotification(`🏭 WH Request ${refNum} sent to main warehouse`);
+  whSaveToStorage(); closeAllModals(); renderWarehouse();
+  showToast(`${refNum} sent to warehouse ✓`);
+}
+
+// ─── Open receive modal ───
+function openWHReceive(id){
+  const req=warehouseRequests.find(r=>r.id===id); if(!req) return;
+  editingWHId=id;
+  document.getElementById('wh-receive-info').innerHTML=
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">WH Ref</span><br/><strong style="font-family:'DM Mono',monospace">${req.ref}</strong></div>
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Linked Order</span><br/><strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${req.linkedOrderRef}</strong></div>
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Client</span><br/><strong>${req.client}</strong></div>
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Items</span><br/><span style="font-size:12px">${req.items}</span></div>
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Qty Requested</span><br/><strong style="font-family:'DM Mono',monospace">${req.qtyReq} ${req.unit}</strong></div>
+      <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">ETA</span><br/><span style="font-size:12px">${req.etaStr}</span></div>
+    </div>`;
+  // Pre-fill qty with requested
+  const qEl=document.getElementById('wh-qty-received');
+  if(qEl){ qEl.value=req.qtyReq; }
+  document.getElementById('wh-qty-hint').textContent=`Requested: ${req.qtyReq} ${req.unit}`;
+  // Pre-fill location
+  const locEl=document.getElementById('wh-recv-location');
+  if(locEl) locEl.value=req.location;
+  // Pre-fill datetime to now
+  const dtEl=document.getElementById('wh-recv-time');
+  if(dtEl) dtEl.value=new Date().toISOString().slice(0,16);
+  // Hide partial warn
+  document.getElementById('wh-partial-warn').classList.add('hidden');
+  document.getElementById('wh-recv-notes').value='';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-wh-receive').classList.remove('hidden');
+}
+
+function whCheckPartial(){
+  const req=warehouseRequests.find(r=>r.id===editingWHId); if(!req) return;
+  const v=parseInt(document.getElementById('wh-qty-received').value)||0;
+  document.getElementById('wh-partial-warn').classList.toggle('hidden', v>=req.qtyReq);
+}
+
+function confirmWHReceive(){
+  const req=warehouseRequests.find(r=>r.id===editingWHId); if(!req) return;
+  const qty=parseInt(document.getElementById('wh-qty-received').value)||0;
+  const recvBy=document.getElementById('wh-recv-by').value;
+  const location=document.getElementById('wh-recv-location').value;
+  const recvTime=document.getElementById('wh-recv-time').value;
+  const condition=document.getElementById('wh-condition').value;
+  const notes=document.getElementById('wh-recv-notes').value;
+
+  const recvTimeStr=recvTime?new Date(recvTime).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):nowFull();
+
+  req.qtyReceived += qty;
+  req.receivedAt = recvTimeStr;
+  req.receivedBy = recvBy;
+  req.condition = condition;
+  req.receiveNotes = notes;
+  req.location = location;
+  req.status = qty < req.qtyReq ? 'partial' : 'received';
+
+  // Add to receive log
+  whReceiveLogs.push({
+    id: Date.now(),
+    whRef: req.ref,
+    orderRef: req.linkedOrderRef,
+    client: req.client,
+    items: req.items,
+    qtyReceived: qty,
+    unit: req.unit,
+    location,
+    receivedBy: recvBy,
+    receivedAt: recvTimeStr,
+    condition,
+    notes,
+    linkedOrderId: req.linkedOrderId
+  });
+
+  addAudit('warehouse','Items Received',
+    `${req.ref} — ${qty} ${req.unit} received at ${location} by ${recvBy} | Condition: ${condition} | Order: ${req.linkedOrderRef}`);
+  addNotification(`📦 ${req.ref} received — ${qty} ${req.unit} at ${location}`);
+
+  // Update status in CEO alerts too
+  whSaveToStorage(); closeAllModals(); renderWarehouse();
+  showToast(`${req.ref} received: ${qty} ${req.unit} at ${location} ✓`);
+}
+
+// ─── Open status modal ───
+function openWHStatus(id){
+  const req=warehouseRequests.find(r=>r.id===id); if(!req) return;
+  editingWHId=id; selectedWHStatus=null;
+  document.getElementById('wh-status-info').innerHTML=
+    `<strong style="font-family:'DM Mono',monospace">${req.ref}</strong> · ${req.linkedOrderRef} · ${req.items}`;
+  const grid=document.getElementById('wh-status-grid');
+  grid.innerHTML=WH_STATUSES.filter(s=>s.key!=='received'&&s.key!=='partial').map(s=>
+    `<div onclick="selectWHStatus('${s.key}')" id="whs-${s.key}" style="padding:10px;border-radius:9px;border:2px solid ${s.color}30;background:${s.bg};cursor:pointer;text-align:center;transition:all .12s">
+      <div style="font-size:16px;margin-bottom:3px">${s.icon}</div>
+      <div style="font-size:11px;font-weight:700;color:${s.color}">${s.label}</div>
+    </div>`).join('');
+  document.getElementById('wh-status-confirm-btn').disabled=true;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-wh-status').classList.remove('hidden');
+}
+function selectWHStatus(key){
+  selectedWHStatus=key;
+  WH_STATUSES.forEach(s=>{
+    const el=document.getElementById('whs-'+s.key);
+    if(el) el.style.transform=s.key===key?'scale(1.05)':'scale(1)';
+  });
+  document.getElementById('wh-status-confirm-btn').disabled=false;
+}
+function confirmWHStatus(){
+  const req=warehouseRequests.find(r=>r.id===editingWHId); if(!req||!selectedWHStatus) return;
+  req.status=selectedWHStatus;
+  addAudit('warehouse','Status Updated',`${req.ref} → ${selectedWHStatus}`);
+  whSaveToStorage(); closeAllModals(); renderWarehouse();
+  showToast(`${req.ref} status → ${selectedWHStatus}`);
+}
+
+// ─── Delete request ───
+function deleteWHRequest(id){
+  if(!confirm('Delete this warehouse request?')) return;
+  const req=warehouseRequests.find(r=>r.id===id);
+  warehouseRequests=warehouseRequests.filter(r=>r.id!==id);
+  addAudit('warehouse','Deleted',`${req?.ref} deleted`);
+  whSaveToStorage(); renderWarehouse();
+  showToast('Request deleted');
+}
+
+// ─── Main render ───
+function renderWarehouse(){
+  // Load from storage if empty
+  if(!warehouseRequests.length) whLoadFromStorage();
+  // Populate order filter dropdown
+  const fOrd=document.getElementById('wh-filter-order');
+  if(fOrd){
+    const cur=fOrd.value;
+    fOrd.innerHTML='<option value="">All Orders</option>';
+    const refs=[...new Set(warehouseRequests.map(r=>r.linkedOrderRef))];
+    refs.forEach(ref=>{
+      const opt=document.createElement('option');
+      opt.value=ref; opt.textContent=ref; fOrd.appendChild(opt);
+    });
+    if(cur) fOrd.value=cur;
+  }
+
+  // Filters
+  const fs=document.getElementById('wh-filter-status')?.value||'';
+  const fo=document.getElementById('wh-filter-order')?.value||'';
+  const fq=(document.getElementById('wh-search')?.value||'').toLowerCase();
+
+  let list=warehouseRequests.filter(r=>{
+    if(fs&&r.status!==fs) return false;
+    if(fo&&r.linkedOrderRef!==fo) return false;
+    if(fq&&!r.ref.toLowerCase().includes(fq)&&!r.items.toLowerCase().includes(fq)&&!r.client.toLowerCase().includes(fq)) return false;
+    return true;
+  });
+
+  // Stats
+  document.getElementById('wh-total').textContent=warehouseRequests.length;
+  document.getElementById('wh-pending').textContent=warehouseRequests.filter(r=>r.status==='pending').length;
+  document.getElementById('wh-transit').textContent=warehouseRequests.filter(r=>r.status==='transit').length;
+  document.getElementById('wh-received').textContent=warehouseRequests.filter(r=>r.status==='received').length;
+
+  const navBadge=document.getElementById('nav-wh-badge');
+  const pending=warehouseRequests.filter(r=>r.status==='pending'||r.status==='transit').length;
+  if(navBadge){navBadge.textContent=pending;navBadge.classList.toggle('hidden',!pending);}
+
+  // Main table
+  const tbody=document.getElementById('wh-tbody');
+  if(!tbody) return;
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">🏭</div><h3>No warehouse requests</h3><p>Click "+ New Request" to raise a warehouse request linked to a production order</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML=list.slice().reverse().map(r=>{
+      const pct2=r.qtyReq>0?Math.round(r.qtyReceived/r.qtyReq*100):0;
+      const condIcon={good:'✅',partial_damage:'⚠',damaged:'❌',short:'📦'}[r.condition]||'';
+      return`<tr style="${r.priority==='urgent'?'background:#FFF8F8':r.priority==='high'?'background:#FFFDF5':''}">
+        <td>
+          <strong style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${r.ref}</strong>
+          ${r.priority==='urgent'?`<br/><span class="badge badge-urgent" style="font-size:9px">🚨 Urgent</span>`:r.priority==='high'?`<br/><span class="badge badge-high" style="font-size:9px">⚠ High</span>`:''}
+        </td>
+        <td>
+          <strong style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${r.linkedOrderRef}</strong>
+          <br/><span style="font-size:9px;color:var(--text3)">#${r.linkedOrderId}</span>
+        </td>
+        <td style="font-size:12px">${r.client}</td>
+        <td style="font-size:12px;max-width:140px">${r.items}</td>
+        <td>
+          <div style="font-family:'DM Mono',monospace;font-size:11px">${r.qtyReceived}/${r.qtyReq} ${r.unit}</div>
+          ${r.qtyReq>0?`<div class="progress-wrap" style="margin-top:4px;min-width:70px"><div class="progress-bar${pct2>=100?' done':pct2>0?' warn':''}" style="width:${pct2}%"></div></div>`:''}
+        </td>
+        <td>${whStatusBadge(r.status)}</td>
+        <td style="font-size:12px">${r.requestedBy}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap">${r.requestedAtStr}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;color:${r.receivedAt?'var(--ffc-green3)':'var(--text4)'}">${r.receivedAt||'—'}</td>
+        <td>
+          ${r.location?`<span style="font-size:11px;background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:6px;white-space:nowrap">📍 ${r.location}</span>`:'—'}
+        </td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap">${r.etaStr}</td>
+        <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis">${r.notes||'—'}</td>
+        <td style="white-space:nowrap">
+          ${r.status!=='received'&&r.status!=='cancelled'?
+            `<button class="btn btn-xs btn-primary" onclick="openWHReceive(${r.id})" style="margin-bottom:2px">📦 Receive</button><br/>`:''}
+          ${r.status!=='received'&&r.status!=='cancelled'?
+            `<button class="btn btn-xs btn-secondary" onclick="openWHStatus(${r.id})" style="margin-bottom:2px">🔄 Status</button><br/>`:''}
+          <button class="btn btn-xs btn-danger" onclick="deleteWHRequest(${r.id})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Receive log
+  const logTbody=document.getElementById('wh-log-tbody');
+  if(logTbody){
+    if(!whReceiveLogs.length){
+      logTbody.innerHTML=`<tr><td colspan="9" style="text-align:center;color:var(--text4);padding:20px">No receive records yet. Receive items to see log.</td></tr>`;
+    } else {
+      const COND_BADGE={good:'<span class="badge badge-green">✅ Good</span>',partial_damage:'<span class="badge badge-amber">⚠ Partial Dmg</span>',damaged:'<span class="badge badge-red">❌ Damaged</span>',short:'<span class="badge badge-orange">📦 Short</span>'};
+      logTbody.innerHTML=whReceiveLogs.slice().reverse().map(l=>`<tr>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${l.whRef}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${l.orderRef}</td>
+        <td style="font-size:12px">${l.client}</td>
+        <td style="font-size:12px">${l.items}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${l.qtyReceived} ${l.unit}</td>
+        <td><span style="font-size:11px;background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:6px">📍 ${l.location}</span></td>
+        <td style="font-size:12px">${l.receivedBy}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap">${l.receivedAt}</td>
+        <td>${COND_BADGE[l.condition]||l.condition||'—'}</td>
+      </tr>`).join('');
+    }
+  }
+}
+
+function clearWHFilters(){
+  ['wh-filter-status','wh-filter-order'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const s=document.getElementById('wh-search');if(s)s.value='';
+  renderWarehouse();
+}
+
+// Seed sample warehouse requests on first load
+function seedWHData(){
+  if(warehouseRequests.length) return; // already seeded
+  const now=new Date();
+  const eta1=new Date(now.getTime()+2*3600000).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const eta2=new Date(now.getTime()+5*3600000).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  warehouseRequests=[
+    {id:whIdCounter++,ref:'WHR-00001',linkedOrderId:1,linkedOrderRef:'ORD-85421',client:'Novotel Dubai',cat:'Fruits',items:'Mixed Fruits — Boxes (Mangoes, Berries, Citrus)',qtyReq:120,qtyReceived:120,unit:'Boxes',priority:'urgent',status:'received',requestedBy:'Ahmed Khalid',requestedAt:new Date().toISOString(),requestedAtStr:nowFull(),eta:'',etaStr:eta1,location:'Cold Storage A',notes:'Refrigerated required',receivedAt:nowFull(),receivedBy:'Khalid Rashid',condition:'good',receiveNotes:'All items intact'},
+    {id:whIdCounter++,ref:'WHR-00002',linkedOrderId:2,linkedOrderRef:'ORD-85422',client:'JW Marriott',cat:'Vegetables',items:'Vegetable Crates — Tomatoes, Cucumber, Capsicum',qtyReq:80,qtyReceived:80,unit:'Crates',priority:'high',status:'received',requestedBy:'Sara Mansoor',requestedAt:new Date().toISOString(),requestedAtStr:nowFull(),eta:'',etaStr:eta1,location:'HORECA Bay 1',notes:'',receivedAt:nowFull(),receivedBy:'Noor Khalil',condition:'good',receiveNotes:''},
+    {id:whIdCounter++,ref:'WHR-00003',linkedOrderId:3,linkedOrderRef:'ORD-85426',client:'Jumeirah',cat:'Dry Goods',items:'Dry Goods Boxes — Lentils, Rice, Chickpeas',qtyReq:50,qtyReceived:0,unit:'Boxes',priority:'normal',status:'picking',requestedBy:'Ahmed Khalid',requestedAt:new Date().toISOString(),requestedAtStr:nowFull(),eta:new Date(now.getTime()+3*3600000).toISOString().slice(0,16),etaStr:eta2,location:'Dry Store',notes:'',receivedAt:null,receivedBy:null,condition:null,receiveNotes:null},
+    {id:whIdCounter++,ref:'WHR-00004',linkedOrderId:4,linkedOrderRef:'ORD-85427',client:'Atlantis',cat:'Mixed',items:'Mixed Pallets — Fruits, Veg, Herbs (bulk)',qtyReq:200,qtyReceived:0,unit:'Units',priority:'high',status:'transit',requestedBy:'Sara Mansoor',requestedAt:new Date().toISOString(),requestedAtStr:nowFull(),eta:new Date(now.getTime()+1.5*3600000).toISOString().slice(0,16),etaStr:new Date(now.getTime()+1.5*3600000).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),location:'Loading Dock',notes:'Heavy items, need forklift at dock',receivedAt:null,receivedBy:null,condition:null,receiveNotes:null},
+  ];
+  // Receive log entries for already-received
+  whReceiveLogs=[
+    {id:1,whRef:'WHR-00001',orderRef:'ORD-85421',client:'Novotel Dubai',items:'Mixed Fruits — Boxes',qtyReceived:120,unit:'Boxes',location:'Cold Storage A',receivedBy:'Khalid Rashid',receivedAt:nowFull(),condition:'good',notes:'All items intact'},
+    {id:2,whRef:'WHR-00002',orderRef:'ORD-85422',client:'JW Marriott',items:'Vegetable Crates',qtyReceived:80,unit:'Crates',location:'HORECA Bay 1',receivedBy:'Noor Khalil',receivedAt:nowFull(),condition:'good',notes:''},
+  ];
+  whSaveToStorage();
+}
+// ══════════════════════════════════════════════
+//  END WAREHOUSE MODULE
+// ══════════════════════════════════════════════
 
 // ══════════════════════════════════════════════
 //  CEO EXECUTIVE DASHBOARD
