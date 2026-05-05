@@ -319,6 +319,35 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
 /* ─── KIOSK COUNTDOWN ─── */
 @keyframes countdown3s{from{width:100%}to{width:0%}}
 
+/* ─── KIOSK LOCK MODE ─── */
+body.kiosk-locked .sidebar,
+body.kiosk-locked .topbar,
+body.kiosk-locked .content{ display:none!important }
+body.kiosk-locked #kiosk-lock-screen{ display:flex!important }
+
+#kiosk-lock-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--ffc-green4);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:0;
+  overflow-y:auto;
+}
+
+/* Unlock overlay — shown when supervisor holds unlock button */
+#kiosk-unlock-overlay{
+  position:fixed;inset:0;z-index:10000;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+#kiosk-unlock-overlay.show{ display:flex!important }
+
+@keyframes countdown3s{from{width:100%}to{width:0%}}
+
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -389,6 +418,10 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
       <span class="nav-icon">🚚</span> Dispatch
       <span id="nav-dispatch-badge" class="nav-badge hidden">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('handover')" id="nav-handover">
+      <span class="nav-icon">🔄</span> Shift Handover
+      <span id="nav-handover-badge" class="nav-badge hidden">!</span>
+    </a>
     <div class="nav-section">Workforce</div>
     <a class="nav-item" onclick="showPage('breaks')" id="nav-breaks">
       <span class="nav-icon">☕</span> Break Tracker
@@ -396,6 +429,9 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
     </a>
     <a class="nav-item" onclick="showPage('staff')" id="nav-staff">
       <span class="nav-icon">👥</span> Staff
+    </a>
+    <a class="nav-item" onclick="showPage('attendance')" id="nav-attendance">
+      <span class="nav-icon">🕐</span> Attendance
     </a>
     <div class="nav-section">Analytics</div>
     <a class="nav-item" onclick="showPage('reports')" id="nav-reports">
@@ -411,6 +447,9 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
     <div class="nav-section">Kiosk</div>
     <a class="nav-item" onclick="openKiosk()" id="nav-kiosk">
       <span class="nav-icon">🖥️</span> Staff Kiosk
+    </a>
+    <a class="nav-item" onclick="enterKioskLockMode()" id="nav-kiosk-lock" style="background:rgba(255,200,0,.15);border:1px solid rgba(255,200,0,.3)">
+      <span class="nav-icon">🔒</span> Tablet Lock Mode
     </a>
   </nav>
   <div class="sidebar-footer">
@@ -613,6 +652,30 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
          STAFF PAGE
     ═══════════════════════════════════════ -->
     <div class="page" id="page-staff">
+      <!-- OUTSOURCED STAFF ROSTER -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="background:linear-gradient(90deg,#FFF8E1,#FFFDF5)">
+          <div>
+            <span class="card-title">🟡 Outsourced Staff Roster</span>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Assign names to OS cards daily before shift starts</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text3)" id="os-roster-date"></span>
+            <button class="btn btn-sm btn-secondary" onclick="copyYesterdayRoster()" title="Copy yesterday's roster to today">📋 Copy Yesterday</button>
+            <button class="btn btn-sm btn-primary" onclick="openOSBulkModal()">✏ Edit Roster</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead><tr>
+              <th>Card / Emp ID</th><th>PIN</th><th>Assigned Name</th><th>Role</th><th>Shift</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="os-roster-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PERMANENT STAFF section header -->
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
           <span class="card-title">🔀 Team Assignment</span>
@@ -624,7 +687,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
         </div>
         <div class="card-body" style="padding:14px 16px">
           <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Select employees then click <strong>Assign to Team</strong> to move them.</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="team-lanes"></div>
+          <div style="display:flex;flex-direction:column;gap:10px" id="team-lanes"></div>
         </div>
       </div>
       <div class="card">
@@ -636,7 +699,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
           <table class="table">
             <thead><tr>
               <th style="width:36px"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this.checked)" style="cursor:pointer"/></th>
-              <th>Name</th><th>Team</th><th>Role</th><th>Shift</th><th>Skills</th><th>Status</th><th>Orders Today</th><th>Packs/Hr</th>
+              <th>Type</th><th>Name</th><th>Team</th><th>Role</th><th>Shift</th><th>Skills</th><th>Status</th><th>Orders Today</th><th>Packs/Hr</th>
             </tr></thead>
             <tbody id="staff-tbody"></tbody>
           </table>
@@ -692,8 +755,9 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px" id="sla-cards"></div>
             <div class="table-wrap"><table class="table"><thead><tr><th>Ref</th><th>Client</th><th>Priority</th><th>SLA Cutoff</th><th>Completed</th><th>SLA Status</th><th>Delay</th></tr></thead><tbody id="sla-tbody"></tbody></table></div>
           </div>
-          <div id="report-personal" class="hidden">
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)">
+        </div><!-- end padding -->
+        <div id="report-personal" class="hidden">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);border-top:1px solid var(--border)">
               <div style="padding:16px 18px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Total Work Time</div><div style="font-size:24px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3)" id="pp-total-work">0m</div></div>
               <div style="padding:16px 18px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Total Break Time</div><div style="font-size:24px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber)" id="pp-total-break">0m</div></div>
               <div style="padding:16px 18px"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Total Packs Done</div><div style="font-size:24px;font-weight:800;font-family:'DM Mono',monospace;color:var(--text)" id="pp-total-packs">0</div></div>
@@ -701,14 +765,13 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
             <div style="padding:14px 18px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <span style="font-size:13px;font-weight:700;color:var(--text)">Staff Performance Cards</span>
-                <select class="filter-select" id="pp-filter-team" onchange="renderPersonalProductivity()"><option value="">All Teams</option><option>Team A</option><option>Team B</option><option>Team C</option><option>Team D</option></select>
+                <select class="filter-select" id="pp-filter-team" onchange="renderPersonalProductivity()"><option value="">All Teams</option><option>Team A</option><option>Team B</option><option>Team C</option><option>Team D</option><option>Team E</option><option>Team F</option><option>Team G</option><option>Team H</option><option>Team I</option><option>Team J</option></select>
               </div>
-              <div id="pp-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px"></div>
+              <div id="pp-cards"></div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- ═══════════════════════════════════════
          AUDIT LOG PAGE
@@ -901,6 +964,105 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
       </div>
     </div>
 
+
+    <!-- ═══════════════════════════════════════
+         ATTENDANCE PAGE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-attendance">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card sc-green"><div class="stat-card-top"><div class="stat-icon-wrap">🌅</div><div class="stat-val" id="att-present">0</div><div class="stat-lbl">Present Today</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-red"><div class="stat-card-top"><div class="stat-icon-wrap">❌</div><div class="stat-val" id="att-absent">0</div><div class="stat-lbl">Not Clocked In</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-amber"><div class="stat-card-top"><div class="stat-icon-wrap">🌙</div><div class="stat-val" id="att-ended">0</div><div class="stat-lbl">Shift Ended</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-blue"><div class="stat-card-top"><div class="stat-icon-wrap">⏱</div><div class="stat-val" id="att-avg-hrs">0h</div><div class="stat-lbl">Avg Shift Length</div></div><div class="stat-card-bar"></div></div>
+      </div>
+
+      <!-- Today's attendance -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">📋 Today's Attendance</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text3)" id="att-date-label"></span>
+            <button class="btn btn-secondary btn-sm" onclick="exportAttendanceCSV()">⬇ Export</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr>
+              <th>Staff</th><th>Team</th><th>Role</th><th>Shift</th>
+              <th>Clock In</th><th>Clock Out</th><th>Total Hours</th>
+              <th>Break Time</th><th>Work Time</th><th>Status</th>
+            </tr></thead>
+            <tbody id="att-today-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Full log -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🗓 Full Attendance Log</span>
+          <div style="display:flex;gap:8px">
+            <input class="filter-select" type="date" id="att-filter-date" onchange="renderAttendance()" style="font-size:12px"/>
+            <select class="filter-select" id="att-filter-team" onchange="renderAttendance()">
+              <option value="">All Teams</option>
+              <option>Team A</option><option>Team B</option><option>Team C</option><option>Team D</option>
+              <option>Team E</option><option>Team F</option><option>Team G</option><option>Team H</option>
+              <option>Team I</option><option>Team J</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('att-filter-date').value='';document.getElementById('att-filter-team').value='';renderAttendance()">Clear</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr>
+              <th>Staff</th><th>Team</th><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Total Hrs</th><th>Work Time</th><th>Break Time</th><th>Status</th>
+            </tr></thead>
+            <tbody id="att-log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ═══════════════════════════════════════
+         SHIFT HANDOVER PAGE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-handover">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card sc-blue"><div class="stat-card-top"><div class="stat-icon-wrap">🔄</div><div class="stat-val" id="ho-total">0</div><div class="stat-lbl">Total Handovers</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-green"><div class="stat-card-top"><div class="stat-icon-wrap">✅</div><div class="stat-val" id="ho-acknowledged">0</div><div class="stat-lbl">Acknowledged</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-amber"><div class="stat-card-top"><div class="stat-icon-wrap">⏳</div><div class="stat-val" id="ho-pending">0</div><div class="stat-lbl">Pending Ack.</div></div><div class="stat-card-bar"></div></div>
+        <div class="stat-card sc-purple"><div class="stat-card-top"><div class="stat-icon-wrap">👤</div><div class="stat-val" id="ho-last-super" style="font-size:13px;margin-top:4px">—</div><div class="stat-lbl">Last Handover By</div></div><div class="stat-card-bar"></div></div>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">🔄 Shift Handover Log</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Outgoing supervisor hands over operations to incoming supervisor</div>
+        </div>
+        <button class="btn btn-primary" onclick="openHandoverModal()">+ New Handover</button>
+      </div>
+
+      <!-- Active handover banner (shown when pending acknowledgement) -->
+      <div id="ho-pending-banner" class="hidden" style="background:linear-gradient(90deg,#FFF8E1,#FFFDE7);border:2px solid #FFE082;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:24px">⚠</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#E65100">Pending Acknowledgement</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px" id="ho-banner-text"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAcknowledgeModal()">✅ Acknowledge Now</button>
+      </div>
+
+      <!-- Handover cards list -->
+      <div id="ho-list"></div>
+
+    </div>
   </div><!-- /content -->
 </main>
 </div><!-- /app -->
@@ -1344,6 +1506,227 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
   </div>
 </div>
 
+
+<!-- NEW HANDOVER MODAL -->
+<div class="modal modal-lg hidden" id="modal-handover">
+  <div class="modal-header">
+    <span class="modal-title">🔄 Shift Handover</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:linear-gradient(90deg,#E8F5E9,#F1FBF1);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🔄</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--ffc-green3)">Outgoing Supervisor hands over to Incoming Supervisor</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Fill in all sections. Incoming supervisor must acknowledge to confirm receipt.</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Outgoing Supervisor</label>
+        <select class="form-control" id="ho-outgoing">
+          <option>Ahmed Khalid</option><option>Sara Mansoor</option>
+          <option>Fatima Al Zaabi</option><option>Omar Hassan</option><option>Maryam Jaber</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Incoming Supervisor</label>
+        <select class="form-control" id="ho-incoming">
+          <option>Sara Mansoor</option><option>Ahmed Khalid</option>
+          <option>Fatima Al Zaabi</option><option>Omar Hassan</option><option>Maryam Jaber</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Outgoing Shift</label>
+        <select class="form-control" id="ho-shift-out">
+          <option value="Morning">🌅 Morning Shift (6am–2pm)</option>
+          <option value="Afternoon">☀ Afternoon Shift (2pm–10pm)</option>
+          <option value="Night">🌙 Night Shift (10pm–6am)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Incoming Shift</label>
+        <select class="form-control" id="ho-shift-in">
+          <option value="Afternoon">☀ Afternoon Shift (2pm–10pm)</option>
+          <option value="Night">🌙 Night Shift (10pm–6am)</option>
+          <option value="Morning">🌅 Morning Shift (6am–2pm)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Handover Time</label>
+      <input class="form-control" id="ho-time" type="datetime-local"/>
+    </div>
+
+    <!-- Operations summary — auto-filled -->
+    <div style="background:var(--bg2);border-radius:10px;padding:12px 14px;margin-bottom:14px" id="ho-ops-summary"></div>
+
+    <!-- Orders status -->
+    <div class="form-group">
+      <label class="form-label">📦 Orders Status Summary</label>
+      <textarea class="form-control" id="ho-orders-status" rows="3" placeholder="e.g. 3 orders completed, 2 in progress (ORD-85421 at 70%), 1 on hold pending client approval..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+
+    <!-- Pending issues -->
+    <div class="form-group">
+      <label class="form-label">⚠ Pending Issues &amp; Escalations</label>
+      <textarea class="form-control" id="ho-issues" rows="3" placeholder="e.g. QC failure on ORD-85423 — rework in progress. Cold storage A temperature alarm at 14:30 — engineer called..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+
+    <!-- Staff notes -->
+    <div class="form-group">
+      <label class="form-label">👥 Staff Notes</label>
+      <textarea class="form-control" id="ho-staff-notes" rows="2" placeholder="e.g. Ahmed on extended break, Noor left early — Team B short-staffed, 3 staff on night shift..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+
+    <!-- Priority items for next shift -->
+    <div class="form-group">
+      <label class="form-label">🎯 Priority Items for Incoming Shift</label>
+      <textarea class="form-control" id="ho-priorities" rows="3" placeholder="e.g. Urgent order ORD-85425 must be completed by 8pm. Warehouse delivery WHR-00004 expected at loading dock..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+
+    <!-- General notes -->
+    <div class="form-group">
+      <label class="form-label">📝 Additional Notes</label>
+      <textarea class="form-control" id="ho-notes" rows="2" placeholder="Any other information the incoming supervisor should know..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+
+    <!-- Condition of department -->
+    <div class="form-group">
+      <label class="form-label">🏭 Department Condition</label>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px" id="ho-condition-grid">
+        <div onclick="selectHOCondition('good')" id="hoc-good" style="padding:10px 6px;border-radius:9px;border:2px solid #C8E6C9;background:#E8F5E9;cursor:pointer;text-align:center;transition:all .12s">
+          <div style="font-size:20px;margin-bottom:3px">🟢</div>
+          <div style="font-size:10px;font-weight:700;color:var(--ffc-green3)">Good</div>
+        </div>
+        <div onclick="selectHOCondition('fair')" id="hoc-fair" style="padding:10px 6px;border-radius:9px;border:2px solid #FFE082;background:#FFF8E1;cursor:pointer;text-align:center;transition:all .12s">
+          <div style="font-size:20px;margin-bottom:3px">🟡</div>
+          <div style="font-size:10px;font-weight:700;color:#E65100">Fair</div>
+        </div>
+        <div onclick="selectHOCondition('needs_attention')" id="hoc-needs_attention" style="padding:10px 6px;border-radius:9px;border:2px solid #FFD54F;background:#FFF3E0;cursor:pointer;text-align:center;transition:all .12s">
+          <div style="font-size:20px;margin-bottom:3px">🟠</div>
+          <div style="font-size:10px;font-weight:700;color:#BF360C">Needs Attention</div>
+        </div>
+        <div onclick="selectHOCondition('critical')" id="hoc-critical" style="padding:10px 6px;border-radius:9px;border:2px solid #FFCDD2;background:#FFEBEE;cursor:pointer;text-align:center;transition:all .12s">
+          <div style="font-size:20px;margin-bottom:3px">🔴</div>
+          <div style="font-size:10px;font-weight:700;color:var(--ffc-red)">Critical</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveHandover()">🔄 Submit Handover</button>
+  </div>
+</div>
+
+<!-- ACKNOWLEDGE HANDOVER MODAL -->
+<div class="modal hidden" id="modal-acknowledge">
+  <div class="modal-header">
+    <span class="modal-title">✅ Acknowledge Handover</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:var(--bg2);border-radius:9px;padding:12px;margin-bottom:14px" id="ack-summary"></div>
+    <div class="form-group">
+      <label class="form-label">Incoming Supervisor Name</label>
+      <select class="form-control" id="ack-supervisor">
+        <option>Sara Mansoor</option><option>Ahmed Khalid</option>
+        <option>Fatima Al Zaabi</option><option>Omar Hassan</option><option>Maryam Jaber</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Acknowledgement Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+      <textarea class="form-control" id="ack-notes" rows="3" placeholder="Any comments, concerns or items noted upon receiving the shift..." style="resize:vertical;font-family:'DM Sans',sans-serif"></textarea>
+    </div>
+    <div style="background:#E8F5E9;border:1.5px solid #C8E6C9;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--ffc-green3);font-weight:600">
+      ✅ By acknowledging, you confirm you have received the handover briefing and accept responsibility for shift operations.
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmAcknowledge()">✅ Confirm &amp; Accept Shift</button>
+  </div>
+</div>
+
+
+<!-- ASSIGN OS EMPLOYEE NAME MODAL -->
+<div class="modal hidden" id="modal-os-assign">
+  <div class="modal-header">
+    <span class="modal-title" id="os-assign-title">✏ Assign Name — OS-01</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:linear-gradient(90deg,#FFF8E1,#FFFDE7);border:1.5px solid #FFE082;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🟡</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#E65100" id="os-assign-card-label">Card: OS-01</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Assign today's outsourced employee to this card</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Employee Full Name</label>
+      <input class="form-control" id="os-name-input" placeholder="e.g. Mohammed Al Sayed" autofocus/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role</label>
+      <select class="form-control" id="os-role-input">
+        <option value="Packer">Packer</option>
+        <option value="Loader">Loader</option>
+        <option value="QC Inspector">QC Inspector</option>
+        <option value="Driver">Driver</option>
+        <option value="Helper">Helper</option>
+        <option value="Cleaner">Cleaner</option>
+        <option value="Data Entry">Data Entry</option>
+      </select>
+    </div>
+    <div class="form-group">
+        <label class="form-label">Shift</label>
+        <select class="form-control" id="os-shift-input">
+          <option value="Day">🌅 Day Shift</option>
+          <option value="Night">🌙 Night Shift</option>
+          <option value="Afternoon">☀ Afternoon Shift</option>
+        </select>
+      </div>
+    <div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text3)">
+      This assignment is for <strong style="color:var(--text)" id="os-assign-date-label"></strong> only. It can be changed any time.
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-danger btn-sm" onclick="clearOSSlot()" id="os-clear-btn" style="margin-right:auto">🗑 Clear Slot</button>
+    <button class="btn btn-primary" onclick="saveOSAssignment()">✅ Assign</button>
+  </div>
+</div>
+
+<!-- OS BULK ROSTER MODAL -->
+<div class="modal modal-lg hidden" id="modal-os-bulk">
+  <div class="modal-header">
+    <span class="modal-title">📋 Daily OS Roster</span>
+    <button class="modal-close" onclick="closeAllModals()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Assign all outsourced staff for today</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px" id="os-bulk-date"></div>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="copyYesterdayRoster()">📋 Copy Yesterday</button>
+    </div>
+    <div id="os-bulk-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-height:520px;overflow-y:auto"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeAllModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveOSBulkRoster()">✅ Save Roster</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
@@ -1368,7 +1751,7 @@ body.dark .nkey{background:var(--card2);border-color:var(--border)}
 
 // ─────────── CONSTANTS ───────────
 const BREAK_LIMITS = { restroom:10, prayer:20, food:45, personal:20, medical:999, emergency:999 };
-const TEAMS = ['Team A','Team B','Team C','Team D'];
+const TEAMS = ['Team A','Team B','Team C','Team D','Team E','Team F','Team G','Team H','Team I','Team J'];
 const DRIVERS = ['Mohammed Al Rashid','Yusuf Ibrahim','Tariq Saeed','Bilal Hussain'];
 const VEHICLES = ['Van-01 (Refrigerated)','Van-02 (Dry)','Truck-01 (Large)','Bike-01 (Small)'];
 const REASONS = [
@@ -1382,15 +1765,79 @@ const REASONS = [
 
 // ─────────── DATA MODEL ───────────
 const STAFF_DATA = [
-  {pin:'1001',name:'Ahmed Khalid',team:'Team A',role:'Packer',shift:'Day',color:'#E3F2FD',ic:'#1565C0',skills:['Fruit Cutting','Packing'],status:'available'},
-  {pin:'1002',name:'Sara Mansoor',team:'Team B',role:'Supervisor',shift:'Day',color:'#F3E5F5',ic:'#6A1B9A',skills:['QC','Supervision','Packing'],status:'available'},
-  {pin:'1003',name:'Khalid Rashid',team:'Team A',role:'Packer',shift:'Day',color:'#E8F5E9',ic:'#2E7D32',skills:['Packing','Loading'],status:'available'},
-  {pin:'1004',name:'Fatima Al Zaabi',team:'Team C',role:'QC Inspector',shift:'Day',color:'#FFF3E0',ic:'#E65100',skills:['QC','Fruit Cutting'],status:'available'},
-  {pin:'1005',name:'Omar Hassan',team:'Team D',role:'Packer',shift:'Night',color:'#E1F5FE',ic:'#01579B',skills:['Frozen Handling','Packing'],status:'available'},
-  {pin:'1006',name:'Noor Khalil',team:'Team B',role:'Loader',shift:'Day',color:'#FCE4EC',ic:'#880E4F',skills:['Loading','Palletizing'],status:'available'},
-  {pin:'1007',name:'Hassan Ali',team:'Team C',role:'Packer',shift:'Night',color:'#E8F5E9',ic:'#1B5E20',skills:['Packing','QC'],status:'available'},
-  {pin:'1008',name:'Maryam Jaber',team:'Team D',role:'QC Inspector',shift:'Day',color:'#FFF8E1',ic:'#F57F17',skills:['QC','Frozen Handling'],status:'available'},
+  {pin:'1001',name:'Ahmed Khalid',team:null,role:'Packer',shift:'Day',color:'#E3F2FD',ic:'#1565C0',skills:['Fruit Cutting','Packing'],status:'available'},
+  {pin:'1002',name:'Sara Mansoor',team:null,role:'Supervisor',shift:'Day',color:'#F3E5F5',ic:'#6A1B9A',skills:['QC','Supervision','Packing'],status:'available'},
+  {pin:'1003',name:'Khalid Rashid',team:null,role:'Packer',shift:'Day',color:'#E8F5E9',ic:'#2E7D32',skills:['Packing','Loading'],status:'available'},
+  {pin:'1004',name:'Fatima Al Zaabi',team:null,role:'QC Inspector',shift:'Day',color:'#FFF3E0',ic:'#E65100',skills:['QC','Fruit Cutting'],status:'available'},
+  {pin:'1005',name:'Omar Hassan',team:null,role:'Packer',shift:'Night',color:'#E1F5FE',ic:'#01579B',skills:['Frozen Handling','Packing'],status:'available'},
+  {pin:'1006',name:'Noor Khalil',team:null,role:'Loader',shift:'Day',color:'#FCE4EC',ic:'#880E4F',skills:['Loading','Palletizing'],status:'available'},
+  {pin:'1007',name:'Hassan Ali',team:null,role:'Packer',shift:'Night',color:'#E8F5E9',ic:'#1B5E20',skills:['Packing','QC'],status:'available'},
+  {pin:'1008',name:'Maryam Jaber',team:null,role:'QC Inspector',shift:'Day',color:'#FFF8E1',ic:'#F57F17',skills:['QC','Frozen Handling'],status:'available'},
 ];
+
+// ── OUTSOURCED STAFF SLOTS (permanent cards, names assigned daily) ──
+const OS_SLOTS = [
+  {pin:'2001',empId:'OS-01',color:'#FFF3E0',ic:'#E65100'},
+  {pin:'2002',empId:'OS-02',color:'#F3E5F5',ic:'#6A1B9A'},
+  {pin:'2003',empId:'OS-03',color:'#E1F5FE',ic:'#01579B'},
+  {pin:'2004',empId:'OS-04',color:'#E8F5E9',ic:'#2E7D32'},
+  {pin:'2005',empId:'OS-05',color:'#FCE4EC',ic:'#880E4F'},
+  {pin:'2006',empId:'OS-06',color:'#FFF8E1',ic:'#F57F17'},
+  {pin:'2007',empId:'OS-07',color:'#E8EAF6',ic:'#3949AB'},
+  {pin:'2008',empId:'OS-08',color:'#E0F2F1',ic:'#00695C'},
+  {pin:'2009',empId:'OS-09',color:'#F9FBE7',ic:'#558B2F'},
+  {pin:'2010',empId:'OS-10',color:'#FFEBEE',ic:'#C62828'},
+  {pin:'2011',empId:'OS-11',color:'#E3F2FD',ic:'#1565C0'},
+  {pin:'2012',empId:'OS-12',color:'#F0F4C3',ic:'#827717'},
+  {pin:'2013',empId:'OS-13',color:'#FFE0B2',ic:'#BF360C'},
+  {pin:'2014',empId:'OS-14',color:'#D7CCC8',ic:'#4E342E'},
+  {pin:'2015',empId:'OS-15',color:'#CFD8DC',ic:'#37474F'},
+  {pin:'2016',empId:'OS-16',color:'#B2EBF2',ic:'#006064'},
+  {pin:'2017',empId:'OS-17',color:'#DCEDC8',ic:'#33691E'},
+  {pin:'2018',empId:'OS-18',color:'#D1C4E9',ic:'#4527A0'},
+  {pin:'2019',empId:'OS-19',color:'#F8BBD0',ic:'#880E4F'},
+  {pin:'2020',empId:'OS-20',color:'#C8E6C9',ic:'#1B5E20'},
+  {pin:'2021',empId:'OS-21',color:'#BBDEFB',ic:'#0D47A1'},
+  {pin:'2022',empId:'OS-22',color:'#FFCDD2',ic:'#B71C1C'},
+  {pin:'2023',empId:'OS-23',color:'#E8F5E9',ic:'#388E3C'},
+  {pin:'2024',empId:'OS-24',color:'#FFF9C4',ic:'#F57F17'},
+  {pin:'2025',empId:'OS-25',color:'#EFEBE9',ic:'#5D4037'},
+  {pin:'2026',empId:'OS-26',color:'#B3E5FC',ic:'#0277BD'},
+  {pin:'2027',empId:'OS-27',color:'#CCFF90',ic:'#33691E'},
+  {pin:'2028',empId:'OS-28',color:'#FFCCBC',ic:'#BF360C'},
+  {pin:'2029',empId:'OS-29',color:'#E1BEE7',ic:'#7B1FA2'},
+  {pin:'2030',empId:'OS-30',color:'#B2DFDB',ic:'#00695C'},
+];
+
+// Daily roster: keyed by date string "DD/MM/YYYY"
+let osRoster = {};       // { "DD/MM/YYYY": { "OS01": {name, role, team, shift}, ... } }
+let rosterDate = new Date().toLocaleDateString('en-GB');
+
+// Helper: get today's OS roster
+function getTodayRoster(){
+  rosterDate = new Date().toLocaleDateString('en-GB');
+  if(!osRoster[rosterDate]) osRoster[rosterDate] = {};
+  return osRoster[rosterDate];
+}
+
+// Get OS slot with today's assignment merged in
+function getOSStaff(){
+  const today = getTodayRoster();
+  return OS_SLOTS.map(slot=>{
+    const assigned = today[slot.pin] || null;
+    return {
+      ...slot,
+      name: assigned ? assigned.name : null,
+      role: assigned ? assigned.role : null,
+      team: assigned ? assigned.team : null,
+      shift: assigned ? assigned.shift : null,
+      isOS: true,
+      isAssigned: !!assigned,
+      status: 'available',
+      productivity: [],
+    };
+  });
+}
 
 let orders = [];
 let breakLogs = [];
@@ -1414,6 +1861,9 @@ let assignTargetTeam = null;
 let currentUser = null;
 let darkMode = false;
 let kioskState='idle',kioskMode='checkout',kioskPin='',kioskFoundStaff=null,kioskReason='',kioskCurrentOut=null,kioskTimerInt=null,kioskBreakIdCounter=1;
+// Attendance tracking
+let attendanceLogs = [];   // {id, pin, name, team, role, type:'shift_in'|'shift_out', time, timeStr, date, shiftLabel, totalShiftMins}
+let attendanceIdCounter = 1;
 let intakeSelected = new Set();
 
 // ─────────── UTILS ───────────
@@ -1422,8 +1872,16 @@ const nowFull = () => new Date().toLocaleString('en-GB',{day:'2-digit',month:'sh
 const pad = n => String(Math.floor(n)).padStart(2,'0');
 const initials = n => n.trim().split(' ').map(x=>x[0]||'').join('').toUpperCase().slice(0,2)||'?';
 const pct = (a,b) => b>0?Math.min(100,Math.round(a/b*100)):0;
-const teamColor = t => ({'Team A':'#E3F2FD','Team B':'#F3E5F5','Team C':'#FFF3E0','Team D':'#E1F5FE'}[t]||'#F5F5F5');
-const teamTextColor = t => ({'Team A':'#1565C0','Team B':'#6A1B9A','Team C':'#E65100','Team D':'#01579B'}[t]||'#616161');
+const teamColor = t => ({
+  'Team A':'#E3F2FD','Team B':'#F3E5F5','Team C':'#FFF3E0','Team D':'#E1F5FE',
+  'Team E':'#E8F5E9','Team F':'#FCE4EC','Team G':'#F0F4C3','Team H':'#E0F2F1',
+  'Team I':'#EDE7F6','Team J':'#FBE9E7'
+}[t]||'#F5F5F5');
+const teamTextColor = t => ({
+  'Team A':'#1565C0','Team B':'#6A1B9A','Team C':'#E65100','Team D':'#01579B',
+  'Team E':'#2E7D32','Team F':'#880E4F','Team G':'#827717','Team H':'#00695C',
+  'Team I':'#4527A0','Team J':'#BF360C'
+}[t]||'#616161');
 const fmtSLA = (timeStr) => {
   if(!timeStr) return '<span class="sla-timer sla-ok">—</span>';
   const [h,m] = timeStr.split(':').map(Number);
@@ -1483,6 +1941,9 @@ function saveToStorage(){
     localStorage.setItem('ffc_audit', JSON.stringify(auditLogs.slice(0,50)));
     localStorage.setItem('ffc_counter', ordIdCounter);
     localStorage.setItem('ffc_staff', JSON.stringify(STAFF_DATA));
+    localStorage.setItem('ffc_os_roster', JSON.stringify(osRoster));
+    localStorage.setItem('ffc_attendance', JSON.stringify(attendanceLogs));
+    localStorage.setItem('ffc_att_counter', attendanceIdCounter);
   }catch(e){}
 }
 
@@ -1496,6 +1957,9 @@ function loadFromStorage(){
     const a=localStorage.getItem('ffc_audit'); if(a) auditLogs=JSON.parse(a);
     const c=localStorage.getItem('ffc_counter'); if(c) ordIdCounter=parseInt(c);
     const st=localStorage.getItem('ffc_staff'); if(st){const sd=JSON.parse(st);sd.forEach(s=>{const found=STAFF_DATA.find(x=>x.pin===s.pin);if(found)Object.assign(found,s);});}
+    const osr=localStorage.getItem('ffc_os_roster'); if(osr) osRoster=JSON.parse(osr);
+    const att=localStorage.getItem('ffc_attendance'); if(att) attendanceLogs=JSON.parse(att);
+    const ac=localStorage.getItem('ffc_att_counter'); if(ac) attendanceIdCounter=parseInt(ac);
   }catch(e){}
 }
 
@@ -1556,7 +2020,7 @@ function showPage(name){
   const nav=document.getElementById('nav-'+name);
   if(nav) nav.classList.add('active');
   currentPage=name;
-  const titles={intake:'Order Intake',productivity:'Productivity',qc:'Quality Control',dispatch:'Dispatch',breaks:'Break Tracker',staff:'Staff Roster',reports:'Reports & Analytics',audit:'Audit Log',ceo:'CEO Executive Dashboard',warehouse:'Warehouse Requests'};
+  const titles={intake:'Order Intake',productivity:'Productivity',qc:'Quality Control',dispatch:'Dispatch',breaks:'Break Tracker',staff:'Staff Roster',reports:'Reports & Analytics',audit:'Audit Log',ceo:'CEO Executive Dashboard',warehouse:'Warehouse Requests',attendance:'Attendance',handover:'Shift Handover'};
   const el=document.getElementById('page-title');
   if(el) el.textContent=titles[name]||name;
   if(name==='intake') renderIntake();
@@ -1569,6 +2033,8 @@ function showPage(name){
   if(name==='audit') renderAuditLog();
   if(name==='ceo') renderCEO();
   if(name==='warehouse') renderWarehouse();
+  if(name==='attendance') renderAttendance();
+  if(name==='handover') renderHandover();
 }
 
 // ─────────── MODALS ───────────
@@ -1817,7 +2283,7 @@ function openOrderAssign(id){
     `<strong>${ord.ref}</strong> · ${ord.cat}/${ord.pkg} · ${ord.totalQty} units<br/><span style="font-size:10px;color:var(--text3)">${ord.client||'—'} ${ord.priority?'· '+ord.priority:''}</span>`;
   document.getElementById('oa-team-grid').innerHTML=TEAMS.map(t=>
     `<div onclick="selectOrderTeam('${t}')" id="ot-${t.replace(' ','')}" style="padding:12px;border-radius:10px;border:2px solid ${teamTextColor(t)}30;background:${teamColor(t)};cursor:pointer;text-align:center;transition:all .12s">
-      <div style="font-size:18px;margin-bottom:3px">${['🅐','🅑','🅒','🅓'][TEAMS.indexOf(t)]}</div>
+      <div style="font-size:18px;margin-bottom:3px">${['🅐','🅑','🅒','🅓','🅔','🅕','🅖','🅗','🅘','🅙'][TEAMS.indexOf(t)]||t}</div>
       <div style="font-size:12px;font-weight:700;color:${teamTextColor(t)}">${t}</div>
       <div style="font-size:10px;color:${teamTextColor(t)}80">${STAFF_DATA.filter(s=>s.team===t).length} members</div>
     </div>`).join('');
@@ -2658,11 +3124,11 @@ function renderPersonalProductivity(){
   const ft=(document.getElementById('pp-filter-team')||{}).value||'';
   const staff=ft?STAFF_DATA.filter(s=>s.team===ft):STAFF_DATA;
 
-  // ── Header totals ──
+  // Header totals
   let tw=0,tb=0,tp=0;
   staff.forEach(s=>{
     tw+=(s.productivity||[]).reduce((a,p)=>a+p.workMins,0);
-    tb+=breakLogs.filter(l=>l.status==='done'&&l.staff.pin===s.pin).reduce((a,l)=>a+l.mins,0);
+    tb+=breakLogs.filter(l=>l.status==='done'&&l.staff&&l.staff.pin===s.pin).reduce((a,l)=>a+l.mins,0);
     tp+=(s.productivity||[]).reduce((a,p)=>a+p.packs,0);
   });
   const tw2=document.getElementById('pp-total-work');
@@ -2674,211 +3140,149 @@ function renderPersonalProductivity(){
 
   const cards=document.getElementById('pp-cards');if(!cards)return;
 
-  // ── Format seconds always as "Xs" ──
-  const fmtS = n => n===null ? '—' : n+'s';
-
-  // ── Speed colour thresholds (secs per pack, work only) ──
   const speedColor = n => n===null?'var(--text3)':n<=60?'var(--ffc-green3)':n<=120?'var(--ffc-amber)':'var(--ffc-red)';
-  const speedLabel = n => n===null?'No data':n<=60?'🟢 Fast':n<=120?'🟡 Average':'🔴 Slow';
+  const speedLabel = n => n===null?'—':n<=60?'🟢 Fast':n<=120?'🟡 Avg':'🔴 Slow';
 
-  cards.innerHTML=staff.map(s=>{
-    const prod  = s.productivity||[];
-    const wmSec = prod.reduce((a,p)=>a+p.workMins,0)*60;   // total work SECONDS
-    const packs = prod.reduce((a,p)=>a+p.packs,0);
-    const units = prod.reduce((a,p)=>a+p.units,0);
-    // Weight from linked orders
-    const totalWeightKg = prod.reduce((a,p)=>{
-      const ord=orders.find(o=>o.ref===p.ref);
-      return a+(ord&&ord.weightKg?ord.weightKg:0);
-    },0);
+  // ── TABLE VIEW ──
+  cards.innerHTML = `
+    <div style="overflow-x:auto;border-top:1px solid var(--border)">
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th style="min-width:160px">Staff</th>
+            <th>Team</th>
+            <th>Work (s)</th>
+            <th>Break (s)</th>
+            <th>Packs</th>
+            <th>Units</th>
+            <th>KG</th>
+            <th>Sec/Pack<br/><span style="font-size:9px;color:var(--ffc-green3);font-weight:400">work only</span></th>
+            <th>Sec/Pack<br/><span style="font-size:9px;color:var(--ffc-amber);font-weight:400">incl. breaks</span></th>
+            <th>Brk/Pack</th>
+            <th>Packs/hr</th>
+            <th>Efficiency</th>
+            <th>Rating</th>
+            <th>Breaks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${staff.map(s=>{
+            const prod   = s.productivity||[];
+            const wmSec  = prod.reduce((a,p)=>a+p.workMins,0)*60;
+            const packs  = prod.reduce((a,p)=>a+p.packs,0);
+            const units  = prod.reduce((a,p)=>a+p.units,0);
+            const breaks = breakLogs.filter(l=>l.status==='done'&&l.staff&&l.staff.pin===s.pin);
+            const bmSec  = breaks.reduce((a,l)=>a+l.mins,0)*60;
+            const totalSec = wmSec+bmSec;
+            const isOut  = breakLogs.some(l=>l.status==='out'&&l.staff&&l.staff.pin===s.pin);
 
-    // Break data
-    const breaks     = breakLogs.filter(l=>l.status==='done'&&l.staff.pin===s.pin);
-    const bmSec      = breaks.reduce((a,l)=>a+l.mins,0)*60; // total break SECONDS
-    const totalSec   = wmSec + bmSec;                        // full shift seconds
+            const totalWeightKg = prod.reduce((a,p)=>{
+              const ord=orders.find(o=>o.ref===p.ref);
+              return a+(ord&&ord.weightKg?ord.weightKg:0);
+            },0);
 
-    const isOut = breakLogs.some(l=>l.status==='out'&&l.staff.pin===s.pin);
+            const spPackWork  = packs>0&&wmSec>0  ? Math.round(wmSec/packs)  : null;
+            const spPackShift = packs>0&&totalSec>0? Math.round(totalSec/packs): null;
+            const brkPerPack  = packs>0&&bmSec>0  ? Math.round(bmSec/packs)  : 0;
+            const packsPerHr  = wmSec>0 ? Math.round(packs/(wmSec/3600)) : 0;
+            const eff         = totalSec>0 ? Math.round(wmSec/totalSec*100) : 100;
+            const sc          = speedColor(spPackWork);
 
-    // ── Core speed metrics (all in SECONDS) ──
-    // 1. Pure work: how many seconds of actual work per pack
-    const spPackWork  = (packs>0 && wmSec>0)  ? Math.round(wmSec/packs)  : null;
-    // 2. Shift-adjusted: seconds of total shift time per pack (penalises breaks)
-    const spPackShift = (packs>0 && totalSec>0)? Math.round(totalSec/packs): null;
-    // 3. Break seconds added per pack (how much break time costs per pack)
-    const brkPerPack  = (packs>0 && bmSec>0)  ? Math.round(bmSec/packs)  : 0;
+            // Break type summary
+            const brkSummary = REASONS.map(r=>{
+              const rl=breaks.filter(l=>l.reason===r.key);
+              if(!rl.length)return null;
+              const total=rl.reduce((a,l)=>a+l.mins,0);
+              const limit=BREAK_LIMITS[r.key]||999;
+              const over=rl.filter(l=>l.mins>limit).length;
+              return `${r.icon}${total}m${over?'⚠':''}`;
+            }).filter(Boolean).join(' ');
 
-    // Efficiency & colour
-    const eff      = totalSec>0 ? Math.round(wmSec/totalSec*100) : 100;
-    const effColor = eff>=80?'var(--ffc-green3)':eff>=60?'var(--ffc-amber)':'var(--ffc-red)';
-    const sc       = speedColor(spPackWork);
-    const sl       = speedLabel(spPackWork);
-
-    // Break type rows
-    const breakRows = REASONS.map(r=>{
-      const rl=breaks.filter(l=>l.reason===r.key);
-      if(!rl.length) return null;
-      const totalM = rl.reduce((a,l)=>a+l.mins,0);
-      const limit  = BREAK_LIMITS[r.key]||999;
-      const over   = rl.filter(l=>l.mins>limit).length;
-      return {...r, count:rl.length, totalM, totalS:totalM*60, over};
-    }).filter(Boolean);
-
-    // Per-order rows (seconds per pack for each order)
-    const orderRows = prod.map(p=>{
-      const ws = p.workMins*60;
-      const sp = (p.packs>0 && ws>0) ? Math.round(ws/p.packs) : null;
-      return {...p, ws, sp};
-    });
-
-    return`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)">
-
-      <!-- ── HEADER ── -->
-      <div style="padding:13px 14px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--card)">
-        <div class="av av-md" style="background:${s.color};color:${s.ic};flex-shrink:0">${initials(s.name)}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:800;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${s.role} · <span style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};padding:1px 6px;border-radius:6px;font-weight:700">${s.team}</span></div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div class="badge ${isOut?'badge-red':'badge-green'}" style="margin-bottom:3px">${isOut?'🔴 Out':'🟢 Active'}</div>
-          <div style="font-size:10px;font-weight:700;color:${sc}">${sl}</div>
-        </div>
-      </div>
-
-      <!-- ── HERO: SECONDS PER PACK — the primary KPI ── -->
-      <div style="background:${spPackWork===null?'var(--bg2)':spPackWork<=60?'#F0FBF0':spPackWork<=120?'#FFFDE7':'#FFF0F0'};padding:18px 14px 14px;border-bottom:1px solid var(--border);text-align:center">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">⚡ Seconds per Pack</div>
-        <div style="display:flex;align-items:flex-end;justify-content:center;gap:20px">
-          <!-- Work only — the main number -->
-          <div>
-            <div style="font-size:48px;font-weight:800;font-family:'DM Mono',monospace;color:${sc};line-height:1">${spPackWork!==null?spPackWork:'—'}</div>
-            <div style="font-size:10px;font-weight:600;color:${sc};text-transform:uppercase;letter-spacing:.5px;margin-top:3px">sec/pack</div>
-            <div style="font-size:9px;color:var(--text3);margin-top:1px">work time only</div>
-          </div>
-          <!-- Divider -->
-          <div style="width:1px;height:50px;background:var(--border);flex-shrink:0"></div>
-          <!-- Incl. breaks -->
-          <div>
-            <div style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text2);line-height:1">${spPackShift!==null?spPackShift:'—'}</div>
-            <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">sec/pack</div>
-            <div style="font-size:9px;color:var(--ffc-amber);margin-top:1px">incl. breaks</div>
-          </div>
-        </div>
-        ${packs>0?`<div style="margin-top:10px;font-size:10px;color:var(--text3)">
-          Break adds <strong style="color:${brkPerPack>30?'var(--ffc-red)':brkPerPack>10?'var(--ffc-amber)':'var(--ffc-green3)'}">${brkPerPack}s</strong> per pack
-        </div>`:''}
-      </div>
-
-      <!-- ── 5 SECONDARY METRICS ── -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)">
-        <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3);line-height:1">${wmSec}</div>
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Work (s)</div>
-        </div>
-        <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border);background:#FFFDF5">
-          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber);line-height:1">${bmSec}</div>
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Break (s)</div>
-        </div>
-        <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green4);line-height:1">${packs}</div>
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Packs</div>
-        </div>
-        <div style="padding:10px 6px;text-align:center;border-right:1px solid var(--border)">
-          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:#1565C0;line-height:1">${units}</div>
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">Units</div>
-        </div>
-        <div style="padding:10px 6px;text-align:center">
-          <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3);line-height:1">${totalWeightKg>0?totalWeightKg:'—'}</div>
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;margin-top:3px;letter-spacing:.3px">KG</div>
-        </div>
-      </div>
-
-      <!-- ── STACKED TIME BAR ── -->
-      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;margin-bottom:5px">
-          <span style="color:var(--text3)">Shift Breakdown</span>
-          <span style="color:${effColor}">Work ${eff}%</span>
-        </div>
-        <div style="height:9px;border-radius:99px;overflow:hidden;background:var(--bg2);display:flex">
-          <div style="flex:${wmSec};background:linear-gradient(90deg,var(--ffc-green3),var(--ffc-lime));min-width:${wmSec?3:0}px"></div>
-          <div style="flex:${bmSec};background:linear-gradient(90deg,var(--ffc-amber),#FDD835);min-width:${bmSec?3:0}px"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:9px;color:var(--text3)">
-          <span><span style="display:inline-block;width:7px;height:7px;background:var(--ffc-green3);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Work ${wmSec}s</span>
-          <span><span style="display:inline-block;width:7px;height:7px;background:var(--ffc-amber);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Break ${bmSec}s</span>
-          <span>Total ${totalSec}s</span>
-        </div>
-      </div>
-
-      <!-- ── BREAK DETAIL (seconds) ── -->
-      ${breakRows.length?`<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px">☕ Breaks</div>
-        ${breakRows.map(r=>{
-          const pct2=bmSec>0?Math.round(r.totalS/bmSec*100):0;
-          return`<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
-            <span style="font-size:13px;flex-shrink:0">${r.icon}</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
-                <span style="font-weight:600;color:var(--text2)">${r.label} ×${r.count}</span>
-                <span style="font-family:'DM Mono',monospace;font-weight:700;color:${r.over?'var(--ffc-red)':'var(--text)'}">${r.totalS}s${r.over?` ⚠`:''}</span>
-              </div>
-              <div style="height:4px;background:var(--bg2);border-radius:99px;overflow:hidden">
-                <div style="height:100%;width:${pct2}%;background:${r.over?'var(--ffc-red)':'var(--ffc-amber)'};border-radius:99px"></div>
-              </div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`:''}
-
-      <!-- ── ORDER LOG (secs per pack per order) ── -->
-      <div style="padding:10px 14px">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px">📦 Per-Order Speed</div>
-        ${orderRows.length ? orderRows.map(p=>{
-          const c2=speedColor(p.sp);
-          const ordW=orders.find(o=>o.ref===p.ref);
-          return`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:6px 9px;background:var(--bg2);border-radius:8px;margin-bottom:4px">
-            <div>
-              <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--ffc-green3)">${p.ref}</div>
-              <div style="font-size:9px;color:var(--text3);margin-top:1px">${p.packs} packs · ${p.units} units · ${p.ws}s work${ordW&&ordW.weightKg?' · <strong style=\'color:var(--ffc-green3)\'>' + ordW.weightKg + ' kg</strong>':''}</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:${c2};line-height:1">${p.sp!==null?p.sp:'—'}</div>
-              <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">s/pack</div>
-            </div>
-            <div style="width:6px;height:6px;border-radius:50%;background:${c2};flex-shrink:0"></div>
-          </div>`;
-        }).join('') : `<div style="text-align:center;font-size:11px;color:var(--text4);padding:10px 0">No orders handled yet</div>`}
-      </div>
-
+            return`<tr style="background:${isOut?'#FFFDE7':''}">
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="av av-sm" style="background:${s.color};color:${s.ic};flex-shrink:0">${initials(s.name)}</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700">${s.name}</div>
+                    <div style="font-size:10px;color:var(--text3)">${s.role}${isOut?' · <span style="color:var(--ffc-red)">On Break</span>':''}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${s.team?`<span class="badge" style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};border:none;font-size:10px">${s.team}</span>`:'<span style="color:var(--text4);font-size:11px">—</span>'}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--ffc-green3)">${wmSec||'0'}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--ffc-amber)">${bmSec||'0'}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--ffc-green4)">${packs}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px">${units}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${totalWeightKg||'—'}</td>
+              <td>
+                <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:800;color:${sc}">${spPackWork!==null?spPackWork:'—'}</div>
+                <div style="font-size:9px;color:var(--text3)">sec/pack</div>
+              </td>
+              <td>
+                <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text2)">${spPackShift!==null?spPackShift:'—'}</div>
+                <div style="font-size:9px;color:var(--ffc-amber)">sec/pack</div>
+              </td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;color:${brkPerPack>30?'var(--ffc-red)':brkPerPack>10?'var(--ffc-amber)':'var(--text3)'}">${brkPerPack?'+'+brkPerPack+'s':'—'}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--ffc-green3)">${packsPerHr||'—'}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div class="progress-wrap" style="width:50px"><div class="progress-bar${eff>=80?'':eff>=60?' warn':' danger'}" style="width:${eff}%"></div></div>
+                  <span style="font-size:11px;font-weight:700;color:${eff>=80?'var(--ffc-green3)':eff>=60?'var(--ffc-amber)':'var(--ffc-red)'}">${eff}%</span>
+                </div>
+              </td>
+              <td style="font-size:11px;font-weight:700;color:${sc}">${speedLabel(spPackWork)}</td>
+              <td style="font-size:11px;color:var(--text2);white-space:nowrap">${brkSummary||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
     </div>`;
-  }).join('');
 }
 // ─────────── STAFF ───────────
 
 function renderStaff(){
-  document.getElementById('staff-count').textContent=STAFF_DATA.length+' members';
-  renderTeamLanes(); renderStaffTable(); updateAssignBtn();
+  const osList = getOSStaff().filter(s=>s.isAssigned);
+  document.getElementById('staff-count').textContent=
+    STAFF_DATA.length+' permanent · '+osList.length+' OS assigned today';
+  renderTeamLanes(); renderStaffTable(); renderOSRoster(); updateAssignBtn();
 }
 
 function renderTeamLanes(){
   const el=document.getElementById('team-lanes');if(!el)return;
-  el.innerHTML=TEAMS.map(team=>{
-    const members=STAFF_DATA.filter(s=>s.team===team);
+  const osAssigned = getOSStaff().filter(s=>s.isAssigned);
+
+  const makeMemberDiv = (s) => {
+    const sel = selectedStaff.has(s.pin);
+    return`<div onclick="toggleStaffSelect('${s.pin}')"
+      style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:7px;margin-bottom:3px;cursor:pointer;
+             background:${sel?'rgba(46,125,50,.18)':'rgba(255,255,255,.6)'};
+             border:1.5px solid ${sel?'var(--ffc-green2)':'transparent'};transition:all .1s">
+      <div class="av" style="width:20px;height:20px;font-size:8px;background:${s.color};color:${s.ic}">${initials(s.name)}</div>
+      <span style="font-size:10px;font-weight:${sel?700:500};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name.split(' ')[0]}</span>
+      ${s.isOS?`<span style="font-size:8px;font-weight:700;color:#E65100;background:#FFE0B2;padding:0 3px;border-radius:3px">${s.empId}</span>`:''}
+      ${sel?'<span style="color:var(--ffc-green3);font-size:11px">✓</span>':''}
+    </div>`;
+  };
+
+  // 4 assigned team lanes
+  const teamLanes = TEAMS.map(team=>{
+    const members    = STAFF_DATA.filter(s=>s.team===team);
+    const osMembers  = osAssigned.filter(s=>s.team===team);
+    const all        = [...members, ...osMembers];
     return`<div style="background:${teamColor(team)};border:2px solid ${teamTextColor(team)}30;border-radius:10px;padding:10px;min-height:70px">
-      <div style="font-size:10px;font-weight:800;color:${teamTextColor(team)};letter-spacing:.5px;margin-bottom:7px;text-transform:uppercase">${team} (${members.length})</div>
-      ${members.map(s=>{const sel=selectedStaff.has(s.pin);return`<div onclick="toggleStaffSelect('${s.pin}')" style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:${sel?'rgba(46,125,50,.18)':'rgba(255,255,255,.55)'};border:1.5px solid ${sel?'var(--ffc-green2)':'transparent'};transition:all .1s">
-        <div class="av" style="width:20px;height:20px;font-size:8px;background:${s.color};color:${s.ic}">${initials(s.name)}</div>
-        <span style="font-size:10px;font-weight:${sel?700:500};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name.split(' ')[0]}</span>
-        ${sel?'<span style="color:var(--ffc-green3);font-size:11px">✓</span>':''}
-      </div>`;}).join('')}
-      ${!members.length?`<div style="font-size:10px;color:${teamTextColor(team)}70;text-align:center;padding:6px">Empty</div>`:''}
+      <div style="font-size:10px;font-weight:800;color:${teamTextColor(team)};letter-spacing:.5px;margin-bottom:7px;text-transform:uppercase">${team} (${all.length})</div>
+      ${all.map(makeMemberDiv).join('')}
+      ${!all.length?`<div style="font-size:10px;color:${teamTextColor(team)}70;text-align:center;padding:6px">Empty</div>`:''}
     </div>`;
   }).join('');
-}
 
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">${teamLanes}</div>`;
+}
 function renderStaffTable(){
   const tbody=document.getElementById('staff-tbody');if(!tbody)return;
-  tbody.innerHTML=STAFF_DATA.map(s=>{
+
+  // Permanent staff rows
+  const permRows = STAFF_DATA.map(s=>{
     const isOut=breakLogs.some(l=>l.status==='out'&&l.staff.pin===s.pin);
     const sel=selectedStaff.has(s.pin);
     const prod=s.productivity||[];
@@ -2887,8 +3291,9 @@ function renderStaffTable(){
     const speed=wm>0?Math.round(packs/wm*60):0;
     return`<tr style="background:${sel?'#F0FBF0':''}">
       <td><input type="checkbox" ${sel?'checked':''} onchange="toggleStaffSelect('${s.pin}')" style="cursor:pointer"/></td>
+      <td><span style="background:#E3F2FD;color:#1565C0;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid #BBDEFB">🟢 Permanent</span></td>
       <td><div style="display:flex;align-items:center;gap:7px"><div class="av av-sm" style="background:${s.color};color:${s.ic}">${initials(s.name)}</div><strong style="font-size:12px">${s.name}</strong></div></td>
-      <td><span class="badge" style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};border:none">${s.team}</span></td>
+      <td>${s.team?`<span class="badge" style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};border:none">${s.team}</span>`:'<span style="background:#F5F5F5;color:#616161;font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px;border:1px dashed #BDBDBD">Unassigned</span>'}</td>
       <td style="font-size:12px">${s.role}</td>
       <td><span class="badge ${s.shift==='Day'?'badge-amber':'badge-blue'}">${s.shift}</span></td>
       <td style="font-size:10px">${(s.skills||[]).map(sk=>`<span style="background:var(--bg2);color:var(--text2);padding:1px 5px;border-radius:6px;border:1px solid var(--border);margin:1px;display:inline-block">${sk}</span>`).join('')}</td>
@@ -2896,11 +3301,60 @@ function renderStaffTable(){
       <td style="font-family:'DM Mono',monospace;font-size:11px">${prod.length}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ffc-green3)">${speed?speed+'/hr':'—'}</td>
     </tr>`;
-  }).join('');
-}
+  });
 
+  // OS staff rows — only today's assigned slots
+  const osStaff = getOSStaff().filter(s=>s.isAssigned);
+  const osRows = osStaff.map(s=>{
+    const sel=selectedStaff.has(s.pin);
+    const isOut=breakLogs.some(l=>l.status==='out'&&l.staff&&l.staff.pin===s.pin);
+    return`<tr style="background:${sel?'#FFF8E8':'#FFFDE7'}">
+      <td><input type="checkbox" ${sel?'checked':''} onchange="toggleStaffSelect('${s.pin}')" style="cursor:pointer"/></td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid #FFD54F">🟡 OS</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:#E65100;font-weight:700">${s.empId}</span>
+        </div>
+      </td>
+      <td><div style="display:flex;align-items:center;gap:7px"><div class="av av-sm" style="background:${s.color};color:${s.ic}">${initials(s.name)}</div><strong style="font-size:12px">${s.name}</strong></div></td>
+      <td>${s.team?`<span class="badge" style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};border:none">${s.team}</span>`:'<span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px">Unassigned</span>'}</td>
+      <td style="font-size:12px">${s.role||'—'}</td>
+      <td><span class="badge ${s.shift==='Day'?'badge-amber':s.shift==='Night'?'badge-blue':'badge-purple'}">${s.shift||'Day'}</span></td>
+      <td style="font-size:10px;color:var(--text4)">—</td>
+      <td><span class="badge ${isOut?'status-break':'status-available'}">${isOut?'On Break':'Available'}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">0</td>
+      <td style="font-size:11px;color:var(--text4)">—</td>
+    </tr>`;
+  });
+
+  if(!permRows.length && !osRows.length){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">👥</div><h3>No staff</h3></div></td></tr>`;
+    return;
+  }
+
+  // Separator row between permanent and OS
+  const separatorRow = osRows.length ? `<tr>
+    <td colspan="10" style="padding:6px 12px;background:linear-gradient(90deg,#FFF8E1,#FFFDF5);border-top:2px solid #FFE082;border-bottom:2px solid #FFE082">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px">🟡</span>
+        <span style="font-size:11px;font-weight:700;color:#E65100">Outsourced Staff — Today's Roster (${osRows.length} assigned)</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:4px">Select and use "Assign to Team →" to place them</span>
+      </div>
+    </td>
+  </tr>` : '';
+
+  tbody.innerHTML = permRows.join('') + separatorRow + osRows.join('');
+}
 function toggleStaffSelect(pin){selectedStaff.has(pin)?selectedStaff.delete(pin):selectedStaff.add(pin);updateAssignBtn();renderTeamLanes();renderStaffTable();}
-function toggleSelectAll(c){if(c)STAFF_DATA.forEach(s=>selectedStaff.add(s.pin));else selectedStaff.clear();updateAssignBtn();renderTeamLanes();renderStaffTable();}
+function toggleSelectAll(checked){
+  if(checked){
+    STAFF_DATA.forEach(s=>selectedStaff.add(s.pin));
+    getOSStaff().filter(s=>s.isAssigned).forEach(s=>selectedStaff.add(s.pin));
+  } else {
+    selectedStaff.clear();
+  }
+  updateAssignBtn();renderTeamLanes();renderStaffTable();
+}
 function clearSelection(){selectedStaff.clear();const sa=document.getElementById('select-all');if(sa)sa.checked=false;updateAssignBtn();renderTeamLanes();renderStaffTable();}
 function updateAssignBtn(){const n=selectedStaff.size;const el=document.getElementById('selected-count');const btn=document.getElementById('assign-btn');if(el)el.textContent=n+' selected';if(btn)btn.disabled=!n;}
 
@@ -2910,7 +3364,7 @@ function openAssignModal(){
   const names=STAFF_DATA.filter(s=>selectedStaff.has(s.pin)).map(s=>s.name);
   document.getElementById('assign-summary').innerHTML=`<strong>${names.length} employee(s)</strong> selected: `+names.map(n=>`<span class="badge badge-gray" style="margin:2px">${n}</span>`).join(' ');
   document.getElementById('assign-team-grid').innerHTML=TEAMS.map(t=>`<div onclick="selectAssignTeam('${t}')" id="at-${t.replace(' ','')}" style="padding:12px;border-radius:10px;border:2px solid ${teamTextColor(t)}40;background:${teamColor(t)};cursor:pointer;text-align:center;transition:all .1s">
-    <div style="font-size:18px;margin-bottom:3px">${['🅐','🅑','🅒','🅓'][TEAMS.indexOf(t)]}</div>
+    <div style="font-size:18px;margin-bottom:3px">${['🅐','🅑','🅒','🅓','🅔','🅕','🅖','🅗','🅘','🅙'][TEAMS.indexOf(t)]||t}</div>
     <div style="font-size:12px;font-weight:700;color:${teamTextColor(t)}">${t}</div>
     <div style="font-size:10px;color:${teamTextColor(t)}80">${STAFF_DATA.filter(s=>s.team===t).length} members</div>
   </div>`).join('');
@@ -2925,16 +3379,26 @@ function selectAssignTeam(t){
 }
 function confirmAssign(){
   if(!assignTargetTeam||!selectedStaff.size)return;
+  const today = new Date().toLocaleDateString('en-GB');
   const names=[];
-  STAFF_DATA.forEach(s=>{if(selectedStaff.has(s.pin)){s.team=assignTargetTeam;names.push(s.name);}});
+  // Permanent staff
+  STAFF_DATA.forEach(s=>{
+    if(selectedStaff.has(s.pin)){s.team=assignTargetTeam;names.push(s.name);}
+  });
+  // OS staff — update their roster entry
+  if(osRoster[today]){
+    OS_SLOTS.forEach(slot=>{
+      if(selectedStaff.has(slot.pin)&&osRoster[today][slot.pin]){
+        osRoster[today][slot.pin].team=assignTargetTeam;
+        names.push(osRoster[today][slot.pin].name+' ('+slot.empId+')');
+      }
+    });
+  }
   closeAllModals(); clearSelection(); renderStaff();
   addAudit('staff','Team Assigned',`${names.join(', ')} → ${assignTargetTeam}`);
   saveToStorage();
   showToast(names.length+' staff assigned to '+assignTargetTeam);
 }
-
-// ─────────── AUDIT LOG ───────────
-const AUDIT_ICONS={order:'📦',break:'☕',qc:'🔍',dispatch:'🚚',staff:'👥',auth:'🔐',intake:'📥'};
 function renderAuditLog(){
   const filter=document.getElementById('audit-filter')?.value||'';
   const list=filter?auditLogs.filter(l=>l.type===filter):auditLogs;
@@ -2974,42 +3438,127 @@ function renderKiosk(){
   else if(kioskState==='out')card.innerHTML=renderKioskOut();
   else if(kioskState==='done')card.innerHTML=renderKioskDone();
   else if(kioskState==='checkout_done')card.innerHTML=renderKioskCheckoutDone();
+  else if(kioskState==='att_done')card.innerHTML=renderKioskAttDone();
   if(kioskState==='out')startKioskTimer();
 }
 function renderKioskIdle(){
-  const outNow=breakLogs.filter(l=>l.status==='out');
-  return`<div style="text-align:center;margin-bottom:18px">
-    <div style="font-size:34px;margin-bottom:7px">👷</div>
-    <div style="font-size:16px;font-weight:700;color:var(--text)">Staff Check-Out Kiosk</div>
-    <div style="font-size:11px;color:var(--text3);margin-top:3px">Select an action to continue</div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
-    <div onclick="kioskMode='checkout';kioskState='pin';renderKiosk()" style="padding:16px 10px;border-radius:11px;border:2px solid var(--ffc-green);background:#E8F5E9;cursor:pointer;text-align:center">
-      <div style="font-size:24px;margin-bottom:5px">🚪</div>
-      <div style="font-size:12px;font-weight:700;color:var(--ffc-green3)">Check Out</div>
-      <div style="font-size:10px;color:var(--ffc-green2);margin-top:2px">Going on break</div>
-    </div>
-    <div onclick="kioskMode='checkin';kioskState='pin';renderKiosk()" style="padding:16px 10px;border-radius:11px;border:2px solid #90CAF9;background:#E3F2FD;cursor:pointer;text-align:center">
-      <div style="font-size:24px;margin-bottom:5px">↩</div>
-      <div style="font-size:12px;font-weight:700;color:#1565C0">Check In</div>
-      <div style="font-size:10px;color:#1976D2;margin-top:2px">Back at station</div>
-    </div>
-  </div>
-  ${outNow.length?`<div style="font-size:10px;font-weight:700;color:var(--ffc-red);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Currently Out (${outNow.length})</div>
-  ${outNow.map(l=>`<div style="display:flex;align-items:center;gap:7px;padding:7px;background:var(--bg2);border-radius:7px;margin-bottom:5px">
-    <div class="av av-sm" style="background:${l.staff.color};color:${l.staff.ic}">${initials(l.name)}</div>
-    <span style="flex:1;font-size:12px;font-weight:600">${l.name}</span>
-    <span class="badge badge-red" style="font-size:10px">Out</span>
-  </div>`).join('')}`:''}`;}
+  const outNow = breakLogs.filter(l=>l.status==='out');
+  const today  = new Date().toLocaleDateString('en-GB');
+  const onShift= attendanceLogs.filter(l=>l.type==='shift_in'&&!l.shiftEndTime&&l.date===today);
 
+  return`
+  <!-- Title -->
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:28px;margin-bottom:5px">🏭</div>
+    <div style="font-size:15px;font-weight:800;color:var(--text)">FFC HORECA · Staff Kiosk</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.8px">Tap an action to continue</div>
+  </div>
+
+  <!-- 4-action grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+    <div onclick="kioskMode='shift_in';kioskState='pin';renderKiosk()"
+      style="padding:15px 10px;border-radius:12px;border:2px solid #A5D6A7;background:linear-gradient(135deg,#E8F5E9,#F1FBF1);cursor:pointer;text-align:center;transition:all .12s">
+      <div style="font-size:24px;margin-bottom:4px">🌅</div>
+      <div style="font-size:12px;font-weight:800;color:var(--ffc-green3)">Start Shift</div>
+      <div style="font-size:10px;color:var(--ffc-green2);margin-top:2px">Morning clock-in</div>
+    </div>
+    <div onclick="kioskMode='shift_out';kioskState='pin';renderKiosk()"
+      style="padding:15px 10px;border-radius:12px;border:2px solid #EF9A9A;background:linear-gradient(135deg,#FFEBEE,#FFF5F5);cursor:pointer;text-align:center;transition:all .12s">
+      <div style="font-size:24px;margin-bottom:4px">🌙</div>
+      <div style="font-size:12px;font-weight:800;color:var(--ffc-red)">End Shift</div>
+      <div style="font-size:10px;color:#E57373;margin-top:2px">Clock out for day</div>
+    </div>
+    <div onclick="kioskMode='checkout';kioskState='pin';renderKiosk()"
+      style="padding:15px 10px;border-radius:12px;border:2px solid #FFE082;background:linear-gradient(135deg,#FFF8E1,#FFFDF5);cursor:pointer;text-align:center;transition:all .12s">
+      <div style="font-size:24px;margin-bottom:4px">☕</div>
+      <div style="font-size:12px;font-weight:800;color:#E65100">Break Out</div>
+      <div style="font-size:10px;color:var(--ffc-amber);margin-top:2px">Going on break</div>
+    </div>
+    <div onclick="kioskMode='checkin';kioskState='pin';renderKiosk()"
+      style="padding:15px 10px;border-radius:12px;border:2px solid #90CAF9;background:linear-gradient(135deg,#E3F2FD,#F0F8FF);cursor:pointer;text-align:center;transition:all .12s">
+      <div style="font-size:24px;margin-bottom:4px">↩</div>
+      <div style="font-size:12px;font-weight:800;color:#1565C0">Break In</div>
+      <div style="font-size:10px;color:#1976D2;margin-top:2px">Back from break</div>
+    </div>
+  </div>
+
+  <!-- Live status strip -->
+  <div style="background:var(--bg2);border-radius:10px;padding:9px 12px;display:flex;gap:0;margin-bottom:12px;overflow:hidden;border:1px solid var(--border)">
+    <div style="flex:1;text-align:center;border-right:1px solid var(--border)">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3)">${onShift.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">On Shift</div>
+    </div>
+    <div style="flex:1;text-align:center;border-right:1px solid var(--border)">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber)">${outNow.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">On Break</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--text3)">${STAFF_DATA.length-onShift.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Not In</div>
+    </div>
+  </div>
+
+  <!-- PIN Reference Card (Permanent + OS slots) -->
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">
+    <div style="background:var(--ffc-green4);padding:8px 12px;display:flex;align-items:center;gap:7px">
+      <span style="font-size:14px">🔑</span>
+      <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.4px">STAFF PIN REFERENCE</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      ${STAFF_DATA.map((s,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border-bottom:${i<STAFF_DATA.length-2?'1px solid var(--border)':'none'};border-right:${i%2===0?'1px solid var(--border)':'none'};background:${i%2===0?'var(--card)':'var(--card2)'}">
+          <div class="av" style="width:26px;height:26px;font-size:9px;font-weight:700;background:${s.color};color:${s.ic};flex-shrink:0">${initials(s.name)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name.split(' ')[0]}</div>
+            <div style="font-size:9px;color:var(--text3)">${s.role}</div>
+          </div>
+          <div style="background:var(--ffc-green4);color:#fff;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:1px;flex-shrink:0">${s.pin}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- OS Card PINs -->
+  <div style="background:var(--card);border:1.5px solid #FFE082;border-radius:12px;overflow:hidden;margin-bottom:10px">
+    <div style="background:#E65100;padding:8px 12px;display:flex;align-items:center;gap:7px">
+      <span style="font-size:14px">🟡</span>
+      <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.4px">OUTSOURCED STAFF CARDS</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;max-height:220px;overflow-y:auto">
+      ${(()=>{const today=new Date().toLocaleDateString('en-GB');return OS_SLOTS.map((slot,i)=>{
+        const assigned=osRoster[today]?.[slot.pin];
+        return`<div style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-bottom:${i<OS_SLOTS.length-2?'1px solid var(--border)':'none'};border-right:${i%2===0?'1px solid var(--border)':'none'};background:${assigned?'var(--card)':'#FFFDE7'}">
+          <div style="background:#E65100;color:#fff;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;flex-shrink:0">${slot.empId}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigned?assigned.name.split(' ')[0]:'Unassigned'}</div>
+            <div style="font-size:9px;color:var(--text3)">${assigned?assigned.role:'—'}</div>
+          </div>
+          <div style="background:${assigned?'var(--ffc-green4)':'var(--border)'};color:#fff;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;flex-shrink:0">${slot.pin}</div>
+        </div>`;
+      }).join('');})()}
+    </div>
+  </div>
+
+  <!-- On break list -->
+  ${outNow.length?`<div style="font-size:10px;font-weight:700;color:var(--ffc-red);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">☕ On Break (${outNow.length})</div>
+  ${outNow.map(l=>`<div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:#FFF8E1;border-radius:8px;margin-bottom:4px;border:1px solid #FFE082">
+    <div class="av av-sm" style="background:${l.staff.color};color:${l.staff.ic}">${initials(l.name)}</div>
+    <span style="flex:1;font-size:11px;font-weight:600">${l.name}</span>
+    <span style="font-size:10px;color:var(--ffc-amber);font-weight:600">Out since ${l.outTime}</span>
+  </div>`).join('')}`:''}
+  `;
+}
 function renderKioskPin(){
   const dots=Array.from({length:4},(_,i)=>`<div class="pin-dot${kioskPin.length>i?' filled':''}" id="kd-${i}"></div>`).join('');
   return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
     <button type="button" onclick="kioskGoBack('idle')" style="padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">← Back</button>
-    <span style="flex:1;text-align:center"><span class="badge ${kioskMode==='checkout'?'badge-green':'badge-blue'}">${kioskMode==='checkout'?'🚪 Check Out':'↩ Check In'}</span></span>
+    <span style="flex:1;text-align:center"><span class="badge ${kioskMode==='shift_in'?'badge-green':kioskMode==='shift_out'?'badge-red':kioskMode==='checkout'?'badge-amber':'badge-blue'}">${
+      kioskMode==='shift_in'?'🌅 Start Shift':
+      kioskMode==='shift_out'?'🌙 End Shift':
+      kioskMode==='checkout'?'☕ Break Out':'↩ Break In'
+    }</span></span>
     <div style="width:52px"></div>
   </div>
-  <div style="font-size:15px;font-weight:700;text-align:center;margin-bottom:4px">${kioskMode==='checkout'?'Enter Your PIN':'Enter PIN to Check In'}</div>
+  <div style="font-size:15px;font-weight:700;text-align:center;margin-bottom:4px">${kioskMode==='shift_in'?'Enter PIN to Start Shift':kioskMode==='shift_out'?'Enter PIN to End Shift':kioskMode==='checkout'?'Enter PIN — Break Out':'Enter PIN — Break In'}</div>
   <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">4-digit personal PIN</div>
   <div class="pin-dots">${dots}</div>
   <div style="min-height:17px;text-align:center;font-size:11px;color:var(--ffc-red);font-weight:600;margin-bottom:7px" id="k-err"></div>
@@ -3116,17 +3665,77 @@ function doKioskCheckout(){
   }, 3000);
 }
 function kioskValidatePin(){
-  const staff=STAFF_DATA.find(s=>s.pin===kioskPin);
+  const staff=findStaffByPin(kioskPin);
   if(!staff){
-    const err=document.getElementById('k-err');if(err)err.textContent='Wrong PIN — try again';
+    // Check if it's an OS slot that hasn't been assigned today
+    const osSlot=OS_SLOTS.find(s=>s.pin===kioskPin);
+    const err=document.getElementById('k-err');
+    if(osSlot){ if(err)err.textContent='OS card not assigned today — see supervisor'; }
+    else { if(err)err.textContent='Wrong PIN — try again'; }
     document.querySelectorAll('.pin-dot').forEach(d=>{d.classList.add('error-dot','shake');});
     setTimeout(()=>{kioskPin='';renderKiosk();},500);return;
   }
   kioskFoundStaff=staff;
+  const today=new Date().toLocaleDateString('en-GB');
+
+  // ── SHIFT START ──
+  if(kioskMode==='shift_in'){
+    // Check if already clocked in today
+    const already=attendanceLogs.find(l=>l.pin===staff.pin&&l.type==='shift_in'&&l.date===today&&!l.shiftEndTime);
+    if(already){
+      const err=document.getElementById('k-err');
+      if(err)err.textContent='Already clocked in at '+already.timeStr;
+      document.querySelectorAll('.pin-dot').forEach(d=>{d.classList.add('error-dot','shake');});
+      setTimeout(()=>{kioskPin='';renderKiosk();},800);return;
+    }
+    const entry={
+      id:attendanceIdCounter++,pin:staff.pin,name:staff.name,
+      team:staff.team,role:staff.role,
+      type:'shift_in',time:Date.now(),timeStr:nowStr(),
+      date:today,shiftLabel:staff.shift+' Shift',
+      shiftEndTime:null,shiftEndStr:null,totalShiftMins:null
+    };
+    attendanceLogs.push(entry);
+    staff.status='available';
+    addAudit('staff','Shift Start',`${staff.name} clocked in at ${entry.timeStr}`);
+    saveToStorage();
+    kioskPin='';kioskState='att_done';
+    kioskAttAction={type:'shift_in',staff,entry};
+    renderKiosk();
+    setTimeout(()=>{kioskState='idle';kioskPin='';kioskFoundStaff=null;renderKiosk();},3000);
+    return;
+  }
+
+  // ── SHIFT END ──
+  if(kioskMode==='shift_out'){
+    const startEntry=attendanceLogs.find(l=>l.pin===staff.pin&&l.type==='shift_in'&&l.date===today&&!l.shiftEndTime);
+    if(!startEntry){
+      const err=document.getElementById('k-err');
+      if(err)err.textContent='No active shift found for today';
+      document.querySelectorAll('.pin-dot').forEach(d=>{d.classList.add('error-dot','shake');});
+      setTimeout(()=>{kioskPin='';renderKiosk();},800);return;
+    }
+    const endTime=Date.now();
+    const totalMins=Math.round((endTime-startEntry.time)/60000);
+    startEntry.shiftEndTime=endTime;
+    startEntry.shiftEndStr=nowStr();
+    startEntry.totalShiftMins=totalMins;
+    staff.status='available';
+    addAudit('staff','Shift End',`${staff.name} clocked out at ${nowStr()} — ${totalMins}m total`);
+    saveToStorage();
+    if(currentPage==='staff')renderStaff();
+    kioskPin='';kioskState='att_done';
+    kioskAttAction={type:'shift_out',staff,entry:startEntry};
+    renderKiosk();
+    setTimeout(()=>{kioskState='idle';kioskPin='';kioskFoundStaff=null;renderKiosk();},3000);
+    return;
+  }
+
+  // ── BREAK IN ──
   if(kioskMode==='checkin'){
     const outLog=breakLogs.find(l=>l.status==='out'&&l.staff.pin===staff.pin);
     if(!outLog){
-      const err=document.getElementById('k-err');if(err)err.textContent='No active check-out found';
+      const err=document.getElementById('k-err');if(err)err.textContent='No active break check-out found';
       document.querySelectorAll('.pin-dot').forEach(d=>{d.classList.add('error-dot','shake');});
       setTimeout(()=>{kioskPin='';renderKiosk();},500);return;
     }
@@ -3136,19 +3745,14 @@ function kioskValidatePin(){
     staff.status='available';
     clearInterval(kioskTimerInt);kioskPin='';kioskState='done';renderKiosk();
     if(currentPage==='breaks')renderBreaks();
-    addAudit('break','Check-In',`${staff.name} — ${mins}m break`);
+    addAudit('break','Break In',`${staff.name} returned — ${mins}m break`);
     saveToStorage();
-    showToast(staff.name+' checked in · '+mins+'m');
-    // Auto-return to idle home after 3 seconds
-    setTimeout(()=>{
-      kioskState='idle';
-      kioskPin='';
-      kioskFoundStaff=null;
-      kioskReason='';
-      renderKiosk();
-    }, 3000);
+    showToast(staff.name+' back from break · '+mins+'m');
+    setTimeout(()=>{kioskState='idle';kioskPin='';kioskFoundStaff=null;kioskReason='';renderKiosk();},3000);
     return;
   }
+
+  // ── BREAK OUT → go to reason screen ──
   kioskPin='';kioskReason='';kioskState='reason';renderKiosk();
 }
 function startKioskTimer(){
@@ -3203,6 +3807,81 @@ function renderKioskCheckoutDone(){
     </div>`;
 }
 
+
+let kioskAttAction = null; // {type, staff, entry}
+
+function renderKioskAttDone(){
+  if(!kioskAttAction)return'';
+  const {type,staff,entry}=kioskAttAction;
+  const isIn=type==='shift_in';
+  const color=isIn?'var(--ffc-green3)':'var(--ffc-red)';
+  const bg=isIn?'#E8F5E9':'#FFEBEE';
+  const border=isIn?'#A5D6A7':'#FFCDD2';
+  const icon=isIn?'🌅':'🌙';
+  const label=isIn?'Shift Started!':'Shift Ended!';
+
+  // For shift end: calculate totals
+  const totalMins=entry.totalShiftMins||0;
+  const totalH=Math.floor(totalMins/60);
+  const totalM=totalMins%60;
+  const breakMins=breakLogs.filter(l=>l.status==='done'&&l.staff&&l.staff.pin===staff.pin&&l.outTime).reduce((a,l)=>a+l.mins,0);
+  const workMins=Math.max(0,totalMins-breakMins);
+
+  return`<div style="text-align:center;padding:8px 0">
+    <!-- Icon -->
+    <div style="width:68px;height:68px;border-radius:50%;background:${bg};border:3px solid ${border};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px">${icon}</div>
+
+    <div style="font-size:19px;font-weight:800;color:${color};margin-bottom:3px">${label}</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">${staff.name}</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:16px">${staff.role} · ${staff.team}</div>
+
+    <!-- Summary -->
+    <div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:left;margin-bottom:14px">
+      ${isIn?`
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Clock-In Time</span>
+        <strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${entry.timeStr}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Shift</span>
+        <strong>${entry.shiftLabel}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
+        <span style="color:var(--text3)">Date</span>
+        <strong style="font-family:'DM Mono',monospace">${entry.date}</strong>
+      </div>`:
+      `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Clock-In</span>
+        <strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${entry.timeStr}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Clock-Out</span>
+        <strong style="font-family:'DM Mono',monospace;color:var(--ffc-red)">${entry.shiftEndStr}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Total Shift</span>
+        <strong style="color:var(--ffc-green3)">${totalH}h ${totalM}m</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text3)">Work Time</span>
+        <strong style="font-family:'DM Mono',monospace">${workMins}m</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
+        <span style="color:var(--text3)">Break Time</span>
+        <strong style="font-family:'DM Mono',monospace;color:var(--ffc-amber)">${breakMins}m</strong>
+      </div>`}
+    </div>
+
+    <!-- Countdown bar -->
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Returning to home in 3 seconds...</div>
+    <div style="background:var(--bg2);border-radius:99px;height:4px;overflow:hidden;margin-bottom:14px">
+      <div style="height:100%;background:${color};border-radius:99px;animation:countdown3s 3s linear forwards"></div>
+    </div>
+
+    <button type="button" class="k-big-btn k-go" onclick="kioskState='idle';kioskPin='';kioskFoundStaff=null;kioskAttAction=null;renderKiosk()" style="background:${color}">↩ Back to Home Now</button>
+  </div>`;
+}
+
 // ─────────── SEED DATA ───────────
 function seedData(){
   // Intake orders
@@ -3222,11 +3901,8 @@ function seedData(){
     {id:ordIdCounter++,ref:'ORD-85426',cat:'Dry Goods',pkg:'Boxes',priority:'normal',totalQty:50,doneQty:0,packSize:10,skus:3,client:'Jumeirah',value:1200,notes:'',slot:'Afternoon',sla:'13:00',status:'unassigned',team:null,createdTime:'08:00',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null,weightKg:75,weightPerPack:15,weightPerUnit:1.5},
     {id:ordIdCounter++,ref:'ORD-85427',cat:'Mixed',pkg:'Pallets',priority:'high',totalQty:200,doneQty:0,packSize:20,skus:12,client:'Atlantis',value:5200,notes:'Heavy items',slot:'Afternoon',sla:'16:00',status:'assigned',team:'Team D',createdTime:'08:30',startTime:null,endTime:null,durationMins:null,qcStatus:null,dispatchStatus:null,weightKg:600,weightPerPack:15,weightPerUnit:3},
   ];
-  // Productivity for done order staff
-  STAFF_DATA.filter(s=>s.team==='Team B').forEach(s=>{
-    if(!s.productivity)s.productivity=[];
-    s.productivity.push({orderId:2,ref:'ORD-85422',workMins:45,packs:8,units:40,date:new Date().toLocaleDateString('en-GB')});
-  });
+  // Reset all teams to null — supervisor assigns fresh each day
+  STAFF_DATA.forEach(s=>s.team=null);
   // Sample audit
   auditLogs=[
     {id:1,type:'auth',action:'Login',details:'System Admin logged in',user:'System Admin',time:nowFull(),ts:Date.now()},
@@ -3635,6 +4311,666 @@ function seedWHData(){
 //  END WAREHOUSE MODULE
 // ══════════════════════════════════════════════
 
+
+// ══════════════════════════════════════════════
+//  ATTENDANCE MODULE
+// ══════════════════════════════════════════════
+
+function renderAttendance(){
+  const today = new Date().toLocaleDateString('en-GB');
+  const el = document.getElementById('att-date-label');
+  if(el) el.textContent = 'Today: ' + today;
+
+  // Date / team filters for full log
+  const fd = document.getElementById('att-filter-date')?.value || '';
+  const ft = document.getElementById('att-filter-team')?.value || '';
+
+  // ── TODAY'S SUMMARY TABLE ──
+  const todayTbody = document.getElementById('att-today-tbody');
+  if(todayTbody){
+    const rows = STAFF_DATA.map(s=>{
+      const entry = attendanceLogs.slice().reverse().find(l=>l.pin===s.pin&&l.type==='shift_in'&&l.date===today);
+      const breakMins = breakLogs.filter(l=>l.status==='done'&&l.staff&&l.staff.pin===s.pin).reduce((a,l)=>a+l.mins,0);
+      const totalMins = entry?.totalShiftMins || (entry&&!entry.shiftEndTime ? Math.round((Date.now()-entry.time)/60000) : null);
+      const workMins = totalMins!==null ? Math.max(0,totalMins-breakMins) : null;
+      const active = entry && !entry.shiftEndTime;
+      const ended  = entry && entry.shiftEndTime;
+
+      let statusBadge, statusColor;
+      if(!entry){ statusBadge='<span class="badge badge-gray">Not In</span>'; statusColor=''; }
+      else if(active){ statusBadge='<span class="badge badge-green">🟢 On Shift</span>'; statusColor='background:#F7FBF7'; }
+      else { statusBadge='<span class="badge badge-amber">🌙 Ended</span>'; statusColor=''; }
+
+      const fmtMins = m => m===null?'—': Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+
+      return`<tr style="${statusColor}">
+        <td><div style="display:flex;align-items:center;gap:7px">
+          <div class="av av-sm" style="background:${s.color};color:${s.ic}">${initials(s.name)}</div>
+          <strong style="font-size:12px">${s.name}</strong>
+        </div></td>
+        <td><span class="badge" style="background:${teamColor(s.team)};color:${teamTextColor(s.team)};border:none">${s.team}</span></td>
+        <td style="font-size:12px">${s.role}</td>
+        <td><span class="badge ${s.shift==='Day'?'badge-amber':'badge-blue'}">${s.shift}</span></td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ffc-green3)">${entry?.timeStr||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:${ended?'var(--ffc-red)':'var(--text4)'}">${entry?.shiftEndStr||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${totalMins?'var(--ffc-green3)':'var(--text4)'}">${fmtMins(totalMins)}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ffc-amber)">${breakMins?breakMins+'m':'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ffc-green3)">${fmtMins(workMins)}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    });
+    todayTbody.innerHTML = rows.join('') || `<tr><td colspan="10" style="text-align:center;color:var(--text4);padding:20px">No attendance data yet. Staff must clock in via the Kiosk.</td></tr>`;
+  }
+
+  // Stats
+  const presentToday = STAFF_DATA.filter(s=>attendanceLogs.some(l=>l.pin===s.pin&&l.type==='shift_in'&&l.date===today)).length;
+  const endedToday   = attendanceLogs.filter(l=>l.type==='shift_in'&&l.date===today&&l.shiftEndTime).length;
+  const finishedLogs = attendanceLogs.filter(l=>l.type==='shift_in'&&l.totalShiftMins);
+  const avgMins      = finishedLogs.length ? Math.round(finishedLogs.reduce((a,l)=>a+l.totalShiftMins,0)/finishedLogs.length) : 0;
+
+  const el0=document.getElementById('att-present'); if(el0) el0.textContent=presentToday;
+  const el1=document.getElementById('att-absent');  if(el1) el1.textContent=STAFF_DATA.length-presentToday;
+  const el2=document.getElementById('att-ended');   if(el2) el2.textContent=endedToday;
+  const el3=document.getElementById('att-avg-hrs'); if(el3) el3.textContent=avgMins?Math.floor(avgMins/60)+'h '+avgMins%60+'m':'—';
+
+  // ── FULL LOG TABLE ──
+  const logTbody = document.getElementById('att-log-tbody');
+  if(!logTbody) return;
+
+  // Group by pin+date, get shift_in entries (they hold end time too)
+  let logs = attendanceLogs.filter(l=>l.type==='shift_in');
+  if(fd){
+    const filterDate = new Date(fd).toLocaleDateString('en-GB');
+    logs = logs.filter(l=>l.date===filterDate);
+  }
+  if(ft) logs = logs.filter(l=>l.team===ft);
+  logs = logs.slice().reverse();
+
+  if(!logs.length){
+    logTbody.innerHTML=`<tr><td colspan="9" style="text-align:center;color:var(--text4);padding:20px">No records${fd||ft?' for selected filter':'. Staff must clock in via the Kiosk'}.</td></tr>`;
+    return;
+  }
+
+  const fmtM = m => m===null||m===undefined?'—': Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+
+  logTbody.innerHTML = logs.map(l=>{
+    const s = STAFF_DATA.find(x=>x.pin===l.pin)||{color:'#eee',ic:'#333',name:l.name,team:l.team};
+    const breakMins = breakLogs.filter(b=>b.status==='done'&&b.staff&&b.staff.pin===l.pin).reduce((a,b)=>a+b.mins,0);
+    const workMins  = l.totalShiftMins!=null ? Math.max(0,l.totalShiftMins-breakMins) : null;
+    const active    = !l.shiftEndTime;
+    return`<tr style="${active?'background:#F7FBF7':''}">
+      <td><div style="display:flex;align-items:center;gap:7px">
+        <div class="av av-sm" style="background:${s.color};color:${s.ic}">${initials(l.name)}</div>
+        <strong style="font-size:12px">${l.name}</strong>
+      </div></td>
+      <td><span class="badge" style="background:${teamColor(l.team)};color:${teamTextColor(l.team)};border:none">${l.team}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${l.date}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ffc-green3);font-weight:700">${l.timeStr}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${l.shiftEndStr?'var(--ffc-red)':'var(--text4)'}">${l.shiftEndStr||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${l.totalShiftMins?'var(--ffc-green3)':'var(--text4)'}">${fmtM(l.totalShiftMins)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${fmtM(workMins)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ffc-amber)">${breakMins?breakMins+'m':'—'}</td>
+      <td>${active?'<span class="badge badge-green">🟢 Active</span>':'<span class="badge badge-gray">✓ Done</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportAttendanceCSV(){
+  const rows=[['Name','Team','Role','Date','Clock In','Clock Out','Total Hours','Work Mins','Break Mins','Status']];
+  attendanceLogs.filter(l=>l.type==='shift_in').forEach(l=>{
+    const bm=breakLogs.filter(b=>b.status==='done'&&b.staff&&b.staff.pin===l.pin).reduce((a,b)=>a+b.mins,0);
+    const wm=l.totalShiftMins!=null?Math.max(0,l.totalShiftMins-bm):'';
+    rows.push([l.name,l.team,l.role||'',l.date,l.timeStr,l.shiftEndStr||'',
+      l.totalShiftMins?Math.floor(l.totalShiftMins/60)+'h '+(l.totalShiftMins%60)+'m':'',wm,bm,
+      l.shiftEndTime?'Completed':'Active']);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='ffc_attendance_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('Attendance exported ✓');
+}
+
+
+// ══════════════════════════════════════════════
+//  OUTSOURCED STAFF (OS) MODULE
+//  OS-01..OS-10 are physical cards handed daily.
+//  A supervisor/data-entry enters the name each
+//  morning to build the daily roster.
+// ══════════════════════════════════════════════
+
+let editingOSPin = null;   // which slot is being edited
+
+// ── Render OS roster table ──
+function renderOSRoster(){
+  const tbody = document.getElementById('os-roster-tbody');
+  if(!tbody) return;
+  const today = new Date().toLocaleDateString('en-GB');
+  const el = document.getElementById('os-roster-date');
+  if(el) el.textContent = 'Today: ' + today;
+
+  const slots = getOSStaff();
+  const assignedCount = slots.filter(s=>s.isAssigned).length;
+
+  tbody.innerHTML = slots.map(slot=>{
+    const isBreak = breakLogs.some(l=>l.status==='out'&&l.staff&&l.staff.pin===slot.pin);
+    return`<tr style="${!slot.isAssigned?'background:#FFFDE7;opacity:.8':''}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="background:${slot.isAssigned?'#E65100':'var(--border)'};color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;min-width:44px;text-align:center">${slot.empId}</div>
+          <span style="font-size:10px;font-weight:700;color:${slot.isAssigned?'#E65100':'var(--text4)'}">🟡 OS</span>
+        </div>
+      </td>
+      <td>
+        <div style="background:var(--ffc-green4);color:#fff;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;display:inline-block;letter-spacing:1px">${slot.pin}</div>
+      </td>
+      <td>
+        ${slot.isAssigned
+          ? `<div style="display:flex;align-items:center;gap:7px">
+               <div class="av av-sm" style="background:${slot.color};color:${slot.ic}">${initials(slot.name)}</div>
+               <strong style="font-size:12px">${slot.name}</strong>
+             </div>`
+          : `<span style="font-size:11px;color:var(--text4);font-style:italic">— Not assigned —</span>`}
+      </td>
+      <td style="font-size:12px">${slot.role||'—'}</td>
+
+      <td>${slot.shift
+          ? `<span class="badge ${slot.shift==='Day'?'badge-amber':slot.shift==='Night'?'badge-blue':'badge-purple'}">${slot.shift}</span>`
+          : '<span style="color:var(--text4);font-size:11px">—</span>'}</td>
+      <td>
+        ${!slot.isAssigned
+          ? '<span class="badge badge-gray">Unassigned</span>'
+          : isBreak
+          ? '<span class="badge badge-amber">☕ On Break</span>'
+          : '<span class="badge badge-green">✅ Available</span>'}
+      </td>
+      <td>
+        <button class="btn btn-xs btn-primary" onclick="openOSAssign('${slot.pin}')">
+          ${slot.isAssigned?'✏ Edit':'+ Assign'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Show progress
+  const header = document.getElementById('os-roster-date');
+  if(header) header.textContent = `Today: ${today} — ${assignedCount}/${slots.length} assigned`;
+}
+
+// ── Open single-slot assign modal ──
+function openOSAssign(pin){
+  const slot = OS_SLOTS.find(s=>s.pin===pin);
+  if(!slot) return;
+  editingOSPin = pin;
+  const today = new Date().toLocaleDateString('en-GB');
+  const existing = osRoster[today]?.[pin];
+
+  document.getElementById('os-assign-title').textContent = '✏ Assign Name — '+slot.empId;
+  document.getElementById('os-assign-card-label').textContent = 'Card: '+slot.empId+' | PIN: '+slot.pin;
+  document.getElementById('os-assign-date-label').textContent = today;
+  document.getElementById('os-name-input').value  = existing?.name  || '';
+  document.getElementById('os-role-input').value  = existing?.role  || 'Packer';
+  document.getElementById('os-shift-input').value = existing?.shift || 'Day';
+
+  const clearBtn = document.getElementById('os-clear-btn');
+  if(clearBtn) clearBtn.style.display = existing ? 'inline-flex' : 'none';
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-os-assign').classList.remove('hidden');
+  setTimeout(()=>{document.getElementById('os-name-input').focus();},100);
+}
+
+// ── Save single slot ──
+function saveOSAssignment(){
+  const name = document.getElementById('os-name-input').value.trim();
+  if(!name){ showToast('Enter employee name','error'); return; }
+  const today = new Date().toLocaleDateString('en-GB');
+  if(!osRoster[today]) osRoster[today] = {};
+  const slot = OS_SLOTS.find(s=>s.pin===editingOSPin);
+  osRoster[today][editingOSPin] = {
+    name,
+    role:  document.getElementById('os-role-input').value,
+    team:  null,
+    shift: document.getElementById('os-shift-input').value,
+  };
+  addAudit('staff','OS Assignment',`${slot.empId} → ${name} (${osRoster[today][editingOSPin].role})`);
+  saveToStorage();
+  closeAllModals();
+  renderOSRoster();
+  renderStaffTable();   // appear in full roster immediately
+  renderTeamLanes();
+  updateAssignBtn();
+  showToast(slot.empId+' assigned to '+name+' — now visible in full roster');
+}
+
+// ── Clear a slot ──
+function clearOSSlot(){
+  if(!editingOSPin) return;
+  const today = new Date().toLocaleDateString('en-GB');
+  const slot  = OS_SLOTS.find(s=>s.pin===editingOSPin);
+  if(osRoster[today]) delete osRoster[today][editingOSPin];
+  addAudit('staff','OS Cleared',`${slot?.empId} slot cleared for ${today}`);
+  saveToStorage();
+  closeAllModals();
+  renderOSRoster();
+  showToast(slot?.empId+' slot cleared');
+}
+
+// ── Copy yesterday's roster to today ──
+function copyYesterdayRoster(){
+  const today = new Date().toLocaleDateString('en-GB');
+  const yesterday = new Date(Date.now()-86400000).toLocaleDateString('en-GB');
+  if(!osRoster[yesterday] || !Object.keys(osRoster[yesterday]).length){
+    showToast('No yesterday roster to copy','warning'); return;
+  }
+  if(!osRoster[today]) osRoster[today] = {};
+  Object.assign(osRoster[today], JSON.parse(JSON.stringify(osRoster[yesterday])));
+  addAudit('staff','OS Roster Copied',`Yesterday roster copied to ${today}`);
+  saveToStorage();
+  closeAllModals();
+  renderOSRoster();
+  showToast('Yesterday roster copied to today ✓');
+}
+
+// ── Bulk roster modal ──
+function openOSBulkModal(){
+  const today = new Date().toLocaleDateString('en-GB');
+  const existing = osRoster[today] || {};
+  const el = document.getElementById('os-bulk-date');
+  if(el) el.textContent = 'Roster for: '+today;
+
+  const grid = document.getElementById('os-bulk-grid');
+  if(!grid) return;
+  grid.innerHTML = OS_SLOTS.map(slot=>{
+    const ass = existing[slot.pin] || {};
+    return`<div style="background:var(--bg2);border-radius:10px;padding:12px;border:1.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="background:#E65100;color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px">${slot.empId}</div>
+        <div style="background:var(--ffc-green4);color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px">PIN: ${slot.pin}</div>
+      </div>
+      <div class="form-group" style="margin-bottom:7px">
+        <label class="form-label" style="font-size:9px">Employee Name</label>
+        <input class="form-control" id="bulk-name-${slot.pin}" value="${ass.name||''}" placeholder="Full name..." style="font-size:12px;padding:6px 9px"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">
+        <div>
+          <label class="form-label" style="font-size:9px">Role</label>
+          <select class="form-control" id="bulk-role-${slot.pin}" style="font-size:11px;padding:5px 7px">
+            <option value="Packer" ${ass.role==='Packer'?'selected':''}>Packer</option>
+            <option value="Loader" ${ass.role==='Loader'?'selected':''}>Loader</option>
+            <option value="QC Inspector" ${ass.role==='QC Inspector'?'selected':''}>QC Inspector</option>
+            <option value="Driver" ${ass.role==='Driver'?'selected':''}>Driver</option>
+            <option value="Helper" ${ass.role==='Helper'?'selected':''}>Helper</option>
+            <option value="Cleaner" ${ass.role==='Cleaner'?'selected':''}>Cleaner</option>
+          </select>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-os-bulk').classList.remove('hidden');
+}
+
+function saveOSBulkRoster(){
+  const today = new Date().toLocaleDateString('en-GB');
+  if(!osRoster[today]) osRoster[today] = {};
+  let count = 0;
+  OS_SLOTS.forEach(slot=>{
+    const name = document.getElementById('bulk-name-'+slot.pin)?.value.trim();
+    if(name){
+      osRoster[today][slot.pin] = {
+        name,
+        role:  document.getElementById('bulk-role-'+slot.pin)?.value || 'Packer',
+        team:  null,
+        shift: 'Day',
+      };
+      count++;
+    } else {
+      delete osRoster[today][slot.pin];
+    }
+  });
+  addAudit('staff','OS Bulk Roster','Daily OS roster saved — '+count+' staff assigned for '+today);
+  saveToStorage();
+  closeAllModals();
+  renderOSRoster();
+  renderStaffTable();   // refresh full roster so OS staff appear immediately
+  renderTeamLanes();    // refresh team lanes with unassigned OS lane
+  updateAssignBtn();
+  showToast(count+' OS staff added to full roster — select and assign teams ✓');
+}
+
+// ── Kiosk: also match OS slots for PIN entry ──
+function findStaffByPin(pin){
+  // Check permanent staff first
+  const perm = STAFF_DATA.find(s=>s.pin===pin);
+  if(perm) return perm;
+  // Check OS slots
+  const today = new Date().toLocaleDateString('en-GB');
+  const slot = OS_SLOTS.find(s=>s.pin===pin);
+  if(slot){
+    const assigned = osRoster[today]?.[slot.pin];
+    if(assigned){
+      return{
+        ...slot,
+        name: assigned.name,
+        role: assigned.role,
+        team: assigned.team || 'Unassigned',
+        shift: assigned.shift,
+        isOS: true,
+        isAssigned: true,
+        status: 'available',
+        productivity: [],
+      };
+    }
+  }
+  return null;
+}
+// ══════════════════════════════════════════════
+//  SHIFT HANDOVER MODULE
+// ══════════════════════════════════════════════
+
+let handoverLogs = [];
+let handoverIdCounter = 1;
+let selectedHOCondition = 'good';
+let editingAckId = null;
+
+// persist
+const _hoSave = () => {
+  try{
+    localStorage.setItem('ffc_handovers', JSON.stringify(handoverLogs));
+    localStorage.setItem('ffc_ho_counter', handoverIdCounter);
+  }catch(e){}
+};
+const _hoLoad = () => {
+  try{
+    const h=localStorage.getItem('ffc_handovers'); if(h) handoverLogs=JSON.parse(h);
+    const hc=localStorage.getItem('ffc_ho_counter'); if(hc) handoverIdCounter=parseInt(hc);
+  }catch(e){}
+};
+
+const HO_COND = {
+  good:           {label:'Good',           icon:'🟢', color:'var(--ffc-green3)', bg:'#E8F5E9'},
+  fair:           {label:'Fair',           icon:'🟡', color:'#E65100',           bg:'#FFF8E1'},
+  needs_attention:{label:'Needs Attention',icon:'🟠', color:'#BF360C',           bg:'#FFF3E0'},
+  critical:       {label:'Critical',       icon:'🔴', color:'var(--ffc-red)',     bg:'#FFEBEE'},
+};
+
+function selectHOCondition(key){
+  selectedHOCondition = key;
+  Object.keys(HO_COND).forEach(k=>{
+    const el = document.getElementById('hoc-'+k);
+    if(!el) return;
+    const sel = k===key;
+    el.style.transform = sel ? 'scale(1.06)' : 'scale(1)';
+    el.style.boxShadow = sel ? '0 0 0 3px '+HO_COND[k].color : 'none';
+  });
+}
+
+function openHandoverModal(){
+  selectedHOCondition = 'good';
+  selectHOCondition('good');
+
+  // Default handover time = now
+  const el = document.getElementById('ho-time');
+  if(el) el.value = new Date().toISOString().slice(0,16);
+
+  // Clear fields
+  ['ho-orders-status','ho-issues','ho-staff-notes','ho-priorities','ho-notes'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+
+  // Auto-fill ops summary
+  const pending   = handoverLogs.filter(h=>!h.acknowledgedAt).length;
+  const activeOrds= orders.filter(o=>o.status==='active').length;
+  const doneOrds  = orders.filter(o=>o.status==='done').length;
+  const outStaff  = breakLogs.filter(l=>l.status==='out').length;
+  const urgentOrds= orders.filter(o=>o.priority==='urgent'&&o.status!=='done').length;
+  const qcPending = orders.filter(o=>o.qcStatus==='pending').length;
+  const dsPending = orders.filter(o=>o.dispatchStatus==='ready').length;
+
+  const el2 = document.getElementById('ho-ops-summary');
+  if(el2) el2.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📊 Current Operations Snapshot (auto-filled)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${[
+        {icon:'⚡',label:'Active Orders',val:activeOrds,color:'var(--ffc-amber)'},
+        {icon:'✅',label:'Completed',val:doneOrds,color:'var(--ffc-green3)'},
+        {icon:'🚨',label:'Urgent Pending',val:urgentOrds,color:urgentOrds>0?'var(--ffc-red)':'var(--ffc-green3)'},
+        {icon:'🔍',label:'QC Pending',val:qcPending,color:qcPending>0?'var(--ffc-amber)':'var(--ffc-green3)'},
+        {icon:'🚚',label:'Ready Dispatch',val:dsPending,color:dsPending>0?'#1565C0':'var(--ffc-green3)'},
+        {icon:'☕',label:'Staff On Break',val:outStaff,color:outStaff>2?'var(--ffc-red)':'var(--text2)'},
+      ].map(s=>`<div style="background:var(--card);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:${s.color}">${s.val}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px">${s.icon} ${s.label}</div>
+      </div>`).join('')}
+    </div>`;
+
+  // Auto-suggest orders status
+  const ordEl = document.getElementById('ho-orders-status');
+  if(ordEl && !ordEl.value){
+    const active = orders.filter(o=>o.status==='active').map(o=>`${o.ref} (${Math.round(o.doneQty/o.totalQty*100)}%)`).join(', ');
+    const onHold = orders.filter(o=>o.status==='hold').map(o=>o.ref+' — '+o.holdReason).join(', ');
+    ordEl.value = [
+      doneOrds  ? `${doneOrds} order(s) completed this shift.`:'',
+      activeOrds? `${activeOrds} in progress: ${active}.`:'',
+      onHold    ? `On hold: ${onHold}.`:'',
+    ].filter(Boolean).join(' ') || '';
+  }
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-handover').classList.remove('hidden');
+}
+
+function saveHandover(){
+  const outgoing  = document.getElementById('ho-outgoing').value;
+  const incoming  = document.getElementById('ho-incoming').value;
+  const shiftOut  = document.getElementById('ho-shift-out').value;
+  const shiftIn   = document.getElementById('ho-shift-in').value;
+  const hoTime    = document.getElementById('ho-time').value;
+  const ordStatus = document.getElementById('ho-orders-status').value.trim();
+  const issues    = document.getElementById('ho-issues').value.trim();
+  const staffNotes= document.getElementById('ho-staff-notes').value.trim();
+  const priorities= document.getElementById('ho-priorities').value.trim();
+  const notes     = document.getElementById('ho-notes').value.trim();
+
+  if(outgoing===incoming){ showToast('Outgoing and incoming supervisor must be different','error'); return; }
+
+  // Snapshot of ops at handover time
+  const snapshot = {
+    activeOrders  : orders.filter(o=>o.status==='active').length,
+    completedOrders: orders.filter(o=>o.status==='done').length,
+    pendingQC     : orders.filter(o=>o.qcStatus==='pending').length,
+    readyDispatch : orders.filter(o=>o.dispatchStatus==='ready').length,
+    staffOnBreak  : breakLogs.filter(l=>l.status==='out').length,
+    totalStaff    : STAFF_DATA.length,
+    urgentOrders  : orders.filter(o=>o.priority==='urgent'&&o.status!=='done').length,
+    totalOrders   : orders.length,
+  };
+
+  const entry = {
+    id: handoverIdCounter++,
+    ref: 'HO-'+String(handoverIdCounter-1).padStart(4,'0'),
+    outgoing, incoming, shiftOut, shiftIn,
+    hoTime: hoTime ? new Date(hoTime).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : nowFull(),
+    hoTimeRaw: hoTime || new Date().toISOString(),
+    ordStatus, issues, staffNotes, priorities, notes,
+    condition: selectedHOCondition,
+    snapshot,
+    createdAt: nowFull(),
+    acknowledgedAt: null,
+    acknowledgedBy: null,
+    ackNotes: null,
+  };
+
+  handoverLogs.unshift(entry);
+  addAudit('staff','Shift Handover',`${outgoing} → ${incoming} | ${shiftOut} → ${shiftIn} | Condition: ${HO_COND[selectedHOCondition].label}`);
+  addNotification(`🔄 Shift handover submitted: ${outgoing} → ${incoming}`);
+  _hoSave();
+  closeAllModals();
+  renderHandover();
+  showToast('Handover submitted — awaiting acknowledgement');
+
+  // Show badge on nav
+  const badge = document.getElementById('nav-handover-badge');
+  if(badge){ badge.classList.remove('hidden'); }
+}
+
+function openAcknowledgeModal(id){
+  const ho = id ? handoverLogs.find(h=>h.id===id) : handoverLogs.find(h=>!h.acknowledgedAt);
+  if(!ho) return;
+  editingAckId = ho.id;
+  const cond = HO_COND[ho.condition]||HO_COND.good;
+
+  document.getElementById('ack-summary').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Handover Ref</div><strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${ho.ref}</strong></div>
+      <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Time</div><strong style="font-family:'DM Mono',monospace">${ho.hoTime}</strong></div>
+      <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Outgoing</div><strong>${ho.outgoing}</strong> <span style="font-size:10px;color:var(--text3)">(${ho.shiftOut})</span></div>
+      <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Incoming</div><strong>${ho.incoming}</strong> <span style="font-size:10px;color:var(--text3)">(${ho.shiftIn})</span></div>
+    </div>
+    <div style="background:${cond.bg};border-radius:8px;padding:8px 11px;font-size:12px;font-weight:600;color:${cond.color}">${cond.icon} Department Condition: ${cond.label}</div>`;
+
+  const ackEl = document.getElementById('ack-supervisor');
+  if(ackEl) ackEl.value = ho.incoming;
+  const notesEl = document.getElementById('ack-notes');
+  if(notesEl) notesEl.value = '';
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-acknowledge').classList.remove('hidden');
+}
+
+function confirmAcknowledge(){
+  const ho = handoverLogs.find(h=>h.id===editingAckId);
+  if(!ho) return;
+  ho.acknowledgedAt = nowFull();
+  ho.acknowledgedBy = document.getElementById('ack-supervisor').value;
+  ho.ackNotes = document.getElementById('ack-notes').value.trim();
+  addAudit('staff','Handover Acknowledged',`${ho.ref} acknowledged by ${ho.acknowledgedBy}`);
+  addNotification(`✅ Handover ${ho.ref} acknowledged by ${ho.acknowledgedBy}`);
+  _hoSave();
+  closeAllModals();
+  renderHandover();
+  showToast(`Handover acknowledged by ${ho.acknowledgedBy} ✓`);
+
+  // Remove badge if no more pending
+  const stillPending = handoverLogs.some(h=>!h.acknowledgedAt);
+  const badge = document.getElementById('nav-handover-badge');
+  if(badge) badge.classList.toggle('hidden', !stillPending);
+}
+
+function renderHandover(){
+  _hoLoad();
+
+  const total = handoverLogs.length;
+  const acked = handoverLogs.filter(h=>h.acknowledgedAt).length;
+  const pend  = total - acked;
+  const last  = handoverLogs[0];
+
+  document.getElementById('ho-total').textContent        = total;
+  document.getElementById('ho-acknowledged').textContent = acked;
+  document.getElementById('ho-pending').textContent      = pend;
+  document.getElementById('ho-last-super').textContent   = last ? last.outgoing.split(' ')[0] : '—';
+
+  // Pending banner
+  const banner = document.getElementById('ho-pending-banner');
+  const pendingHO = handoverLogs.find(h=>!h.acknowledgedAt);
+  if(banner){
+    banner.classList.toggle('hidden', !pendingHO);
+    if(pendingHO){
+      document.getElementById('ho-banner-text').textContent =
+        `${pendingHO.ref} — ${pendingHO.outgoing} → ${pendingHO.incoming} | Submitted ${pendingHO.createdAt} — waiting for ${pendingHO.incoming} to acknowledge.`;
+    }
+  }
+
+  // Nav badge
+  const navBadge = document.getElementById('nav-handover-badge');
+  if(navBadge) navBadge.classList.toggle('hidden', !pend);
+
+  const list = document.getElementById('ho-list');
+  if(!list) return;
+
+  if(!handoverLogs.length){
+    list.innerHTML = `<div class="empty-state" style="padding:40px"><div class="empty-icon">🔄</div><h3>No handovers yet</h3><p>Click "+ New Handover" to create the first shift handover record</p></div>`;
+    return;
+  }
+
+  list.innerHTML = handoverLogs.map(ho=>{
+    const cond = HO_COND[ho.condition] || HO_COND.good;
+    const snap = ho.snapshot || {};
+    const isAcked = !!ho.acknowledgedAt;
+
+    return`<div style="background:var(--card);border:1.5px solid ${isAcked?'var(--border)':'#FFE082'};border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)">
+
+      <!-- Card header -->
+      <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:${isAcked?'var(--card2)':'#FFFDE7'}">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${ho.ref}</strong>
+            <span style="font-size:11px;color:var(--text3)">${ho.hoTime}</span>
+            <span style="background:${cond.bg};color:${cond.color};font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid ${cond.color}30">${cond.icon} ${cond.label}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+            <div style="font-weight:700">${ho.outgoing}</div>
+            <span style="color:var(--text3)">(${ho.shiftOut})</span>
+            <span style="color:var(--ffc-green3);font-size:16px">→</span>
+            <div style="font-weight:700">${ho.incoming}</div>
+            <span style="color:var(--text3)">(${ho.shiftIn})</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${isAcked
+            ? `<div style="color:var(--ffc-green3);font-size:12px;font-weight:700">✅ Acknowledged</div>
+               <div style="font-size:10px;color:var(--text3);margin-top:2px">by ${ho.acknowledgedBy} · ${ho.acknowledgedAt}</div>`
+            : `<button class="btn btn-sm btn-primary" onclick="openAcknowledgeModal(${ho.id})">✅ Acknowledge</button>
+               <div style="font-size:10px;color:var(--ffc-amber);font-weight:600;margin-top:4px">⏳ Pending ack.</div>`}
+        </div>
+      </div>
+
+      <!-- Ops snapshot chips -->
+      <div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;background:var(--card)">
+        ${[
+          {label:'Active',   val:snap.activeOrders,   icon:'⚡', color:'var(--ffc-amber)'},
+          {label:'Completed',val:snap.completedOrders, icon:'✅', color:'var(--ffc-green3)'},
+          {label:'Urgent',   val:snap.urgentOrders,    icon:'🚨', color:snap.urgentOrders>0?'var(--ffc-red)':'var(--text3)'},
+          {label:'QC Pend.', val:snap.pendingQC,       icon:'🔍', color:'#6A1B9A'},
+          {label:'Dispatch', val:snap.readyDispatch,   icon:'🚚', color:'#1565C0'},
+          {label:'On Break', val:snap.staffOnBreak,    icon:'☕', color:snap.staffOnBreak>2?'var(--ffc-red)':'var(--text3)'},
+        ].map(s=>`<div style="background:var(--bg2);border-radius:7px;padding:4px 9px;display:flex;align-items:center;gap:5px;border:1px solid var(--border)">
+          <span style="font-size:12px">${s.icon}</span>
+          <span style="font-size:11px;font-weight:700;color:${s.color}">${s.val??'—'}</span>
+          <span style="font-size:10px;color:var(--text3)">${s.label}</span>
+        </div>`).join('')}
+      </div>
+
+      <!-- Detail sections -->
+      <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        ${[
+          {label:'📦 Orders Status', val:ho.ordStatus},
+          {label:'⚠ Pending Issues', val:ho.issues},
+          {label:'👥 Staff Notes',   val:ho.staffNotes},
+          {label:'🎯 Priorities',    val:ho.priorities},
+        ].filter(s=>s.val).map(s=>`<div>
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${s.label}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;background:var(--bg2);border-radius:8px;padding:8px 10px">${s.val}</div>
+        </div>`).join('')}
+        ${ho.notes?`<div style="grid-column:1/-1">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">📝 Additional Notes</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;background:var(--bg2);border-radius:8px;padding:8px 10px">${ho.notes}</div>
+        </div>`:''}
+      </div>
+
+      <!-- Ack notes if present -->
+      ${isAcked&&ho.ackNotes?`<div style="padding:10px 18px;border-top:1px solid var(--border);background:#F0FBF0">
+        <span style="font-size:10px;font-weight:700;color:var(--ffc-green3);text-transform:uppercase">Incoming Supervisor Notes: </span>
+        <span style="font-size:12px;color:var(--text2)">${ho.ackNotes}</span>
+      </div>`:''}
+
+    </div>`;
+  }).join('');
+}
 // ══════════════════════════════════════════════
 //  CEO EXECUTIVE DASHBOARD
 // ══════════════════════════════════════════════
@@ -4023,6 +5359,503 @@ function _ceoPriority(){
 //  END CEO DASHBOARD
 // ══════════════════════════════════════════════
 
+
+// ══════════════════════════════════════════════
+//  KIOSK LOCK MODE
+//  Locks tablet to staff kiosk only.
+//  Exit requires supervisor PIN.
+// ══════════════════════════════════════════════
+
+const SUPERVISOR_PINS = ['1002','1004','1008']; // Sara, Fatima, Maryam
+const KIOSK_LOCK_PIN  = '9999'; // master override PIN (change as needed)
+
+let kioskLocked = false;
+let lockUnlockPin = '';
+let lockKioskState = 'idle';
+let lockKioskPin   = '';
+let lockKioskMode  = 'checkout';
+let lockKioskFoundStaff = null;
+let lockKioskReason     = '';
+let lockKioskCurrentOut = null;
+let lockKioskAttAction  = null;
+let lockKioskTimerInt   = null;
+
+// ── Enter lock mode ──
+function enterKioskLockMode(){
+  kioskLocked = true;
+  document.body.classList.add('kiosk-locked');
+  // Attempt fullscreen
+  try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
+  lockKioskState = 'idle';
+  lockKioskPin   = '';
+  lockKioskFoundStaff = null;
+  lockKioskReason = '';
+  renderLockKiosk();
+  // Persist lock state
+  try{ localStorage.setItem('ffc_kiosk_locked','1'); }catch(e){}
+  showToast('Kiosk locked — tablet in entrance mode');
+}
+
+// ── Exit lock mode (after PIN verified) ──
+function exitKioskLockMode(){
+  kioskLocked = false;
+  document.body.classList.remove('kiosk-locked');
+  try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
+  try{ localStorage.removeItem('ffc_kiosk_locked'); }catch(e){}
+  addAudit('auth','Kiosk Unlocked','Supervisor exited tablet lock mode');
+  showToast('Kiosk unlocked ✓');
+}
+
+// ── Unlock overlay ──
+function openKioskUnlock(){
+  lockUnlockPin = '';
+  document.getElementById('unlock-err').textContent = '';
+  renderUnlockDots();
+  document.getElementById('kiosk-unlock-overlay').classList.add('show');
+}
+function closeKioskUnlock(){
+  document.getElementById('kiosk-unlock-overlay').classList.remove('show');
+  lockUnlockPin = '';
+}
+function unlockPress(k){
+  if(k==='del'){ lockUnlockPin=lockUnlockPin.slice(0,-1); renderUnlockDots(); return; }
+  if(lockUnlockPin.length>=4) return;
+  lockUnlockPin += k;
+  renderUnlockDots();
+  if(lockUnlockPin.length===4) setTimeout(validateUnlockPin, 120);
+}
+function renderUnlockDots(){
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('ud-'+i);
+    if(el){ el.className='pin-dot'+(lockUnlockPin.length>i?' filled':''); }
+  }
+}
+function validateUnlockPin(){
+  const isSuper = STAFF_DATA.find(s=>s.pin===lockUnlockPin&&SUPERVISOR_PINS.includes(s.pin));
+  const isMaster = lockUnlockPin === KIOSK_LOCK_PIN;
+  if(isSuper || isMaster){
+    closeKioskUnlock();
+    exitKioskLockMode();
+  } else {
+    const err=document.getElementById('unlock-err');
+    if(err) err.textContent='Incorrect PIN — supervisors only';
+    for(let i=0;i<4;i++){
+      const el=document.getElementById('ud-'+i);
+      if(el){ el.className='pin-dot error-dot shake'; }
+    }
+    setTimeout(()=>{ lockUnlockPin=''; renderUnlockDots();
+      const e=document.getElementById('unlock-err'); if(e)e.textContent=''; },600);
+  }
+}
+
+// ── Lock screen clock ──
+setInterval(()=>{
+  const el=document.getElementById('lock-clock');
+  if(el) el.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+},1000);
+
+// ── Render lock kiosk (mirrors main kiosk but uses lock-kiosk-card) ──
+function renderLockKiosk(){
+  const card = document.getElementById('lock-kiosk-card');
+  if(!card) return;
+
+  if(lockKioskState==='idle')         card.innerHTML = lockRenderIdle();
+  else if(lockKioskState==='pin')     card.innerHTML = lockRenderPin();
+  else if(lockKioskState==='reason')  card.innerHTML = lockRenderReason();
+  else if(lockKioskState==='out')     card.innerHTML = lockRenderOut();
+  else if(lockKioskState==='done')    card.innerHTML = lockRenderDone();
+  else if(lockKioskState==='checkout_done') card.innerHTML = lockRenderCheckoutDone();
+  else if(lockKioskState==='att_done') card.innerHTML = lockRenderAttDone();
+
+  if(lockKioskState==='out') startLockKioskTimer();
+}
+
+// ── LOCK: IDLE ──
+function lockRenderIdle(){
+  const outNow  = breakLogs.filter(l=>l.status==='out');
+  const today   = new Date().toLocaleDateString('en-GB');
+  const onShift = attendanceLogs.filter(l=>l.type==='shift_in'&&!l.shiftEndTime&&l.date===today);
+  return`
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:28px;margin-bottom:5px">🏭</div>
+    <div style="font-size:15px;font-weight:800;color:var(--text)">FFC HORECA · Staff Kiosk</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.8px">Tap an action to continue</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+    <div onclick="lockSetAction('shift_in')" style="padding:15px 10px;border-radius:12px;border:2px solid #A5D6A7;background:linear-gradient(135deg,#E8F5E9,#F1FBF1);cursor:pointer;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">🌅</div>
+      <div style="font-size:12px;font-weight:800;color:var(--ffc-green3)">Start Shift</div>
+      <div style="font-size:10px;color:var(--ffc-green2);margin-top:2px">Morning clock-in</div>
+    </div>
+    <div onclick="lockSetAction('shift_out')" style="padding:15px 10px;border-radius:12px;border:2px solid #EF9A9A;background:linear-gradient(135deg,#FFEBEE,#FFF5F5);cursor:pointer;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">🌙</div>
+      <div style="font-size:12px;font-weight:800;color:var(--ffc-red)">End Shift</div>
+      <div style="font-size:10px;color:#E57373;margin-top:2px">Clock out for day</div>
+    </div>
+    <div onclick="lockSetAction('checkout')" style="padding:15px 10px;border-radius:12px;border:2px solid #FFE082;background:linear-gradient(135deg,#FFF8E1,#FFFDF5);cursor:pointer;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">☕</div>
+      <div style="font-size:12px;font-weight:800;color:#E65100">Break Out</div>
+      <div style="font-size:10px;color:var(--ffc-amber);margin-top:2px">Going on break</div>
+    </div>
+    <div onclick="lockSetAction('checkin')" style="padding:15px 10px;border-radius:12px;border:2px solid #90CAF9;background:linear-gradient(135deg,#E3F2FD,#F0F8FF);cursor:pointer;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">↩</div>
+      <div style="font-size:12px;font-weight:800;color:#1565C0">Break In</div>
+      <div style="font-size:10px;color:#1976D2;margin-top:2px">Back from break</div>
+    </div>
+  </div>
+  <div style="background:var(--bg2);border-radius:10px;padding:9px 12px;display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border)">
+    <div style="flex:1;text-align:center;border-right:1px solid var(--border)">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-green3)">${onShift.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">On Shift</div>
+    </div>
+    <div style="flex:1;text-align:center;border-right:1px solid var(--border)">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--ffc-amber)">${outNow.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">On Break</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:var(--text3)">${STAFF_DATA.length-onShift.length}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Not In</div>
+    </div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">
+    <div style="background:var(--ffc-green4);padding:8px 12px;display:flex;align-items:center;gap:7px">
+      <span style="font-size:14px">🔑</span>
+      <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.4px">STAFF PIN REFERENCE</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      ${STAFF_DATA.map((s,i)=>`<div style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-bottom:${i<STAFF_DATA.length-2?'1px solid var(--border)':'none'};border-right:${i%2===0?'1px solid var(--border)':'none'}">
+        <div class="av" style="width:24px;height:24px;font-size:9px;font-weight:700;background:${s.color};color:${s.ic}">${initials(s.name)}</div>
+        <div style="flex:1"><div style="font-size:10px;font-weight:700">${s.name.split(' ')[0]}</div><div style="font-size:9px;color:var(--text3)">${s.role}</div></div>
+        <div style="background:var(--ffc-green4);color:#fff;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:2px 7px;border-radius:5px">${s.pin}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid #FFE082;border-radius:12px;overflow:hidden">
+    <div style="background:#E65100;padding:7px 12px;display:flex;align-items:center;gap:7px">
+      <span style="font-size:13px">🟡</span>
+      <span style="font-size:11px;font-weight:700;color:#fff">OUTSOURCED STAFF CARDS</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;max-height:200px;overflow-y:auto">
+      ${(()=>{const today=new Date().toLocaleDateString('en-GB');return OS_SLOTS.map((slot,i)=>{
+        const assigned=osRoster[today]?.[slot.pin];
+        return`<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;border-bottom:${i<OS_SLOTS.length-2?'1px solid var(--border)':'none'};border-right:${i%2===0?'1px solid var(--border)':'none'}">
+          <div style="background:#E65100;color:#fff;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px">${slot.empId}</div>
+          <div style="flex:1"><div style="font-size:10px;font-weight:700">${assigned?assigned.name.split(' ')[0]:'—'}</div></div>
+          <div style="background:${assigned?'var(--ffc-green4)':'var(--border)'};color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:2px 6px;border-radius:5px">${slot.pin}</div>
+        </div>`;}).join('');})()}
+    </div>
+  </div>`;
+}
+
+function lockSetAction(mode){
+  lockKioskMode = mode;
+  lockKioskState = 'pin';
+  lockKioskPin = '';
+  renderLockKiosk();
+}
+
+// ── LOCK: PIN ──
+function lockRenderPin(){
+  const dots = Array.from({length:4},(_,i)=>`<div class="pin-dot${lockKioskPin.length>i?' filled':''}" id="lkd-${i}"></div>`).join('');
+  const modeLabel = lockKioskMode==='shift_in'?'🌅 Start Shift':lockKioskMode==='shift_out'?'🌙 End Shift':lockKioskMode==='checkout'?'☕ Break Out':'↩ Break In';
+  const modeBadge = lockKioskMode==='shift_in'?'badge-green':lockKioskMode==='shift_out'?'badge-red':lockKioskMode==='checkout'?'badge-amber':'badge-blue';
+  const prompt    = lockKioskMode==='shift_in'?'Enter PIN to Start Shift':lockKioskMode==='shift_out'?'Enter PIN to End Shift':lockKioskMode==='checkout'?'Enter PIN — Break Out':'Enter PIN — Break In';
+  return`
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <button type="button" onclick="lockGoBack()" style="padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">← Back</button>
+    <span style="flex:1;text-align:center"><span class="badge ${modeBadge}">${modeLabel}</span></span>
+    <div style="width:52px"></div>
+  </div>
+  <div style="font-size:15px;font-weight:700;text-align:center;margin-bottom:4px">${prompt}</div>
+  <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">4-digit personal PIN</div>
+  <div class="pin-dots">${dots}</div>
+  <div style="min-height:17px;text-align:center;font-size:11px;color:var(--ffc-red);font-weight:600;margin-bottom:7px" id="lk-err"></div>
+  <div class="numpad">
+    ${[1,2,3,4,5,6,7,8,9].map(n=>`<div class="nkey" onclick="lockPressKey('${n}')">${n}</div>`).join('')}
+    <div class="nkey empty"></div>
+    <div class="nkey" onclick="lockPressKey('0')">0</div>
+    <div class="nkey del" onclick="lockPressKey('del')">⌫</div>
+  </div>`;
+}
+
+function lockPressKey(k){
+  if(k==='del'){ lockKioskPin=lockKioskPin.slice(0,-1); renderLockKiosk(); return; }
+  if(lockKioskPin.length>=4) return;
+  lockKioskPin+=k; renderLockKiosk();
+  if(lockKioskPin.length===4) setTimeout(lockKioskValidatePin,120);
+}
+
+function lockGoBack(){
+  lockKioskPin=''; lockKioskState='idle'; renderLockKiosk();
+}
+
+// ── LOCK: REASON ──
+function lockRenderReason(){
+  if(!lockKioskFoundStaff) return '';
+  const s=lockKioskFoundStaff;
+  return`
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <button type="button" onclick="lockGoBack()" style="padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">← Back</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--bg2);border-radius:11px;margin-bottom:12px">
+    <div class="av av-md" style="background:${s.color};color:${s.ic}">${initials(s.name)}</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">${s.name}</div>
+      <div style="font-size:10px;color:var(--text3)">${s.team||'—'} · ${s.role||'—'}</div>
+    </div>
+    <span class="badge badge-amber">☕ Break Out</span>
+  </div>
+  <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;text-align:center;margin-bottom:8px">Break Reason</div>
+  <div class="reason-grid">
+    ${REASONS.map(r=>`<div class="reason-btn${lockKioskReason===r.key?' sel':''}" onclick="lockSetReason('${r.key}')">
+      <span class="reason-emoji">${r.icon}</span>
+      <span class="reason-name">${r.label}${r.limit<999?'<br/><small style="font-size:9px;color:var(--text4)">Max '+r.limit+'m</small>':''}</span>
+    </div>`).join('')}
+  </div>
+  <button type="button" class="k-big-btn k-go" onclick="lockConfirmCheckout()" ${!lockKioskReason?'disabled':''}>✓ Confirm Check-Out</button>`;
+}
+
+function lockSetReason(r){ lockKioskReason=r; renderLockKiosk(); }
+
+function lockConfirmCheckout(){
+  if(!lockKioskFoundStaff||!lockKioskReason) return;
+  const entry={id:kioskBreakIdCounter++,name:lockKioskFoundStaff.name,
+    team:lockKioskFoundStaff.team,staff:lockKioskFoundStaff,
+    reason:lockKioskReason,outTime:nowStr(),startMs:Date.now(),status:'out',inTime:'',mins:0};
+  lockKioskCurrentOut=entry; breakLogs.push(entry);
+  lockKioskFoundStaff.status='break';
+  if(currentPage==='breaks') renderBreaks();
+  addAudit('break','Check-Out',lockKioskFoundStaff.name+' — '+lockKioskReason);
+  saveToStorage();
+  lockKioskState='checkout_done'; renderLockKiosk();
+  setTimeout(()=>{ lockKioskState='idle'; lockKioskPin=''; lockKioskFoundStaff=null; lockKioskReason=''; renderLockKiosk(); },3000);
+}
+
+// ── LOCK: OUT TIMER ──
+function lockRenderOut(){
+  if(!lockKioskCurrentOut) return '';
+  const lo=lockKioskCurrentOut;
+  const r=REASONS.find(x=>x.key===lo.reason);
+  const limit=BREAK_LIMITS[lo.reason]||999;
+  const secs=Math.max(0,Math.floor((Date.now()-lo.startMs)/1000));
+  const m=Math.floor(secs/60),s=secs%60;
+  return`<div style="background:#FFF8F6;border:2px solid #FFCCBC;border-radius:13px;padding:18px;text-align:center;margin-bottom:12px">
+    <div class="av av-lg" style="background:${lo.staff.color};color:${lo.staff.ic};margin:0 auto 9px">${initials(lo.name)}</div>
+    <div style="font-size:15px;font-weight:700">${lo.name}</div>
+    <div style="font-size:11px;color:#BF360C;margin-bottom:12px">${r?r.icon+' '+r.label:''} · Max ${limit<999?limit+'m':'no limit'}</div>
+    <div class="out-timer-big${m>=limit?' warn':''}" id="lk-out-timer">${pad(m)}:${pad(s)}</div>
+    <div style="font-size:10px;color:var(--text3)">Out since ${lo.outTime}</div>
+  </div>
+  <button type="button" class="k-big-btn k-back" onclick="lockKioskState='idle';renderLockKiosk()">← Back to Home</button>`;
+}
+
+// ── LOCK: CHECKOUT DONE ──
+function lockRenderCheckoutDone(){
+  if(!lockKioskCurrentOut) return '';
+  const lo=lockKioskCurrentOut;
+  const r=REASONS.find(x=>x.key===lo.reason);
+  const limit=BREAK_LIMITS[lo.reason]||999;
+  return`<div style="text-align:center;padding:8px 0">
+    <div style="width:64px;height:64px;border-radius:50%;background:#E8F5E9;border:3px solid #A5D6A7;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px">✅</div>
+    <div style="font-size:18px;font-weight:800;color:var(--ffc-green3);margin-bottom:3px">Checked Out!</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">${lo.name}</div>
+    <div style="background:var(--bg2);border-radius:11px;padding:12px;text-align:left;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">Break Reason</span><strong>${r?r.icon+' '+r.label:'—'}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text3)">Out at</span><strong style="font-family:'DM Mono',monospace">${lo.outTime}</strong></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Returning to home in 3 seconds...</div>
+    <div style="background:var(--bg2);border-radius:99px;height:4px;overflow:hidden;margin-bottom:12px"><div style="height:100%;background:var(--ffc-green3);border-radius:99px;animation:countdown3s 3s linear forwards"></div></div>
+    <button type="button" class="k-big-btn k-go" onclick="lockKioskState='idle';lockKioskPin='';lockKioskFoundStaff=null;lockKioskReason='';renderLockKiosk()">↩ Back to Home Now</button>
+  </div>`;
+}
+
+// ── LOCK: BREAK DONE (check-in complete) ──
+function lockRenderDone(){
+  const last=breakLogs.filter(l=>l.status==='done').slice(-1)[0]; if(!last) return '';
+  const r=REASONS.find(x=>x.key===last.reason);
+  const limit=BREAK_LIMITS[last.reason]||999;
+  const isViolation=last.mins>limit;
+  return`<div style="text-align:center;padding:8px 0">
+    <div style="width:60px;height:60px;border-radius:50%;background:${isViolation?'#FFEBEE':'#E8F5E9'};border:2px solid ${isViolation?'#FFCDD2':'#A5D6A7'};display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px">${isViolation?'⚠':'✓'}</div>
+    <div style="font-size:18px;font-weight:700;color:${isViolation?'var(--ffc-red)':'var(--ffc-green3)'};margin-bottom:4px">${isViolation?'Over Limit!':'Welcome Back!'}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${last.name}</div>
+    <div style="background:var(--bg2);border-radius:10px;padding:10px;text-align:left;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">Duration</span><strong style="color:${last.mins>limit?'var(--ffc-red)':'var(--ffc-green3)'}">${last.mins}m${last.mins>limit?' ⚠':''}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text3)">Reason</span><span>${r?r.icon+' '+r.label:'—'}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Returning to home in 3 seconds...</div>
+    <div style="background:var(--bg2);border-radius:99px;height:4px;overflow:hidden;margin-bottom:12px"><div style="height:100%;background:var(--ffc-green3);border-radius:99px;animation:countdown3s 3s linear forwards"></div></div>
+    <button type="button" class="k-big-btn k-go" onclick="lockKioskState='idle';lockKioskPin='';lockKioskFoundStaff=null;lockKioskReason='';renderLockKiosk()">↩ Back to Home</button>
+  </div>`;
+}
+
+// ── LOCK: ATTENDANCE DONE ──
+function lockRenderAttDone(){
+  if(!lockKioskAttAction) return '';
+  const {type,staff,entry}=lockKioskAttAction;
+  const isIn=type==='shift_in';
+  const color=isIn?'var(--ffc-green3)':'var(--ffc-red)';
+  const icon=isIn?'🌅':'🌙';
+  const label=isIn?'Shift Started!':'Shift Ended!';
+  const totalMins=entry.totalShiftMins||0;
+  const totalH=Math.floor(totalMins/60), totalM=totalMins%60;
+  const breakMins=breakLogs.filter(l=>l.status==='done'&&l.staff&&l.staff.pin===staff.pin).reduce((a,l)=>a+l.mins,0);
+  return`<div style="text-align:center;padding:8px 0">
+    <div style="width:68px;height:68px;border-radius:50%;background:${isIn?'#E8F5E9':'#FFEBEE'};border:3px solid ${isIn?'#A5D6A7':'#FFCDD2'};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px">${icon}</div>
+    <div style="font-size:19px;font-weight:800;color:${color};margin-bottom:3px">${label}</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">${staff.name}</div>
+    <div style="background:var(--bg2);border-radius:11px;padding:12px;text-align:left;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">${isIn?'Clock-In':'Clock-In'}</span><strong style="font-family:'DM Mono',monospace;color:var(--ffc-green3)">${entry.timeStr}</strong></div>
+      ${!isIn?`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">Clock-Out</span><strong style="font-family:'DM Mono',monospace;color:var(--ffc-red)">${entry.shiftEndStr}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">Total Shift</span><strong style="color:var(--ffc-green3)">${totalH}h ${totalM}m</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text3)">Break Time</span><strong style="color:var(--ffc-amber)">${breakMins}m</strong></div>`:''}
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Returning to home in 3 seconds...</div>
+    <div style="background:var(--bg2);border-radius:99px;height:4px;overflow:hidden;margin-bottom:12px"><div style="height:100%;background:${color};border-radius:99px;animation:countdown3s 3s linear forwards"></div></div>
+    <button type="button" class="k-big-btn k-go" onclick="lockKioskState='idle';lockKioskPin='';lockKioskFoundStaff=null;lockKioskAttAction=null;renderLockKiosk()" style="background:${color}">↩ Back to Home Now</button>
+  </div>`;
+}
+
+function startLockKioskTimer(){
+  clearInterval(lockKioskTimerInt);
+  lockKioskTimerInt=setInterval(()=>{
+    if(!lockKioskCurrentOut) return;
+    const el=document.getElementById('lk-out-timer'); if(!el){ clearInterval(lockKioskTimerInt); return; }
+    const secs=Math.max(0,Math.floor((Date.now()-lockKioskCurrentOut.startMs)/1000));
+    const m=Math.floor(secs/60),s=secs%60;
+    el.textContent=pad(m)+':'+pad(s);
+    const limit=BREAK_LIMITS[lockKioskCurrentOut.reason]||999;
+    el.className='out-timer-big'+(m>=limit?' warn':'');
+  },1000);
+}
+
+// ── Intercept mode-button clicks via event delegation on lock card ──
+document.addEventListener('DOMContentLoaded',()=>{
+  const lockCard=document.getElementById('lock-kiosk-card');
+  if(lockCard){
+    lockCard.addEventListener('click',e=>{
+      if(!kioskLocked) return;
+      // Buttons that set kioskMode + kioskState are rendered with onclick=
+      // Those will run in global scope where we've overridden the functions above
+    });
+  }
+
+  // Restore lock mode if tablet was refreshed
+  try{
+    if(localStorage.getItem('ffc_kiosk_locked')==='1'){
+      // Wait for app to load then lock
+      setTimeout(()=>{
+        if(document.getElementById('app').style.display!=='none') enterKioskLockMode();
+      },800);
+    }
+  }catch(e){}
+});
+
+// ── Override mode setters so idle buttons work in lock mode ──
+// The renderKioskIdle HTML has onclick="kioskMode='shift_in';kioskState='pin';renderKiosk()"
+// We need these to affect lockKiosk state instead.
+// Override renderKiosk in lock mode:
+// renderKiosk override removed — lock screen is self-contained
+
+
+
+function lockKioskValidatePin(){
+  const staff = findStaffByPin(lockKioskPin);
+  const today = new Date().toLocaleDateString('en-GB');
+
+  if(!staff){
+    const errEl = document.getElementById('lk-err');
+    const osSlot = OS_SLOTS.find(s=>s.pin===lockKioskPin);
+    if(errEl) errEl.textContent = osSlot ? 'OS card not assigned today — see supervisor' : 'Wrong PIN — try again';
+    document.querySelectorAll('#lock-kiosk-card .pin-dot').forEach(d=>{
+      d.classList.remove('filled'); d.classList.add('error-dot','shake');
+    });
+    setTimeout(()=>{ lockKioskPin=''; renderLockKiosk(); }, 600);
+    return;
+  }
+
+  lockKioskFoundStaff = staff;
+
+  // ── Shift Start ──
+  if(lockKioskMode==='shift_in'){
+    const already = attendanceLogs.find(l=>l.pin===staff.pin&&l.type==='shift_in'&&l.date===today&&!l.shiftEndTime);
+    if(already){
+      const e=document.getElementById('lk-err');
+      if(e) e.textContent='Already clocked in at '+already.timeStr;
+      document.querySelectorAll('#lock-kiosk-card .pin-dot').forEach(d=>d.classList.add('error-dot','shake'));
+      setTimeout(()=>{ lockKioskPin=''; renderLockKiosk(); },800);
+      return;
+    }
+    const entry={id:attendanceIdCounter++,pin:staff.pin,name:staff.name,team:staff.team,role:staff.role,
+      type:'shift_in',time:Date.now(),timeStr:nowStr(),date:today,
+      shiftLabel:(staff.shift||'Day')+' Shift',shiftEndTime:null,shiftEndStr:null,totalShiftMins:null};
+    attendanceLogs.push(entry);
+    staff.status='available';
+    addAudit('staff','Shift Start',staff.name+' clocked in at '+entry.timeStr);
+    saveToStorage();
+    lockKioskPin=''; lockKioskState='att_done';
+    lockKioskAttAction={type:'shift_in',staff,entry};
+    renderLockKiosk();
+    setTimeout(()=>{ lockKioskState='idle'; lockKioskPin=''; lockKioskFoundStaff=null; renderLockKiosk(); },3000);
+    return;
+  }
+
+  // ── Shift End ──
+  if(lockKioskMode==='shift_out'){
+    const startEntry = attendanceLogs.find(l=>l.pin===staff.pin&&l.type==='shift_in'&&l.date===today&&!l.shiftEndTime);
+    if(!startEntry){
+      const e=document.getElementById('lk-err');
+      if(e) e.textContent='No active shift found for today';
+      document.querySelectorAll('#lock-kiosk-card .pin-dot').forEach(d=>d.classList.add('error-dot','shake'));
+      setTimeout(()=>{ lockKioskPin=''; renderLockKiosk(); },800);
+      return;
+    }
+    const endMs=Date.now();
+    const totalMins=Math.round((endMs-startEntry.time)/60000);
+    startEntry.shiftEndTime=endMs; startEntry.shiftEndStr=nowStr(); startEntry.totalShiftMins=totalMins;
+    staff.status='available';
+    addAudit('staff','Shift End',staff.name+' clocked out — '+totalMins+'m total');
+    saveToStorage();
+    if(currentPage==='staff') renderStaff();
+    lockKioskPin=''; lockKioskState='att_done';
+    lockKioskAttAction={type:'shift_out',staff,entry:startEntry};
+    renderLockKiosk();
+    setTimeout(()=>{ lockKioskState='idle'; lockKioskPin=''; lockKioskFoundStaff=null; renderLockKiosk(); },3000);
+    return;
+  }
+
+  // ── Break In ──
+  if(lockKioskMode==='checkin'){
+    const outLog = breakLogs.find(l=>l.status==='out'&&l.staff&&l.staff.pin===staff.pin);
+    if(!outLog){
+      const e=document.getElementById('lk-err');
+      if(e) e.textContent='No active break check-out found';
+      document.querySelectorAll('#lock-kiosk-card .pin-dot').forEach(d=>d.classList.add('error-dot','shake'));
+      setTimeout(()=>{ lockKioskPin=''; renderLockKiosk(); },600);
+      return;
+    }
+    const mins=Math.max(1,Math.round((Date.now()-outLog.startMs)/60000));
+    outLog.status='done'; outLog.inTime=nowStr(); outLog.mins=mins;
+    if(lockKioskCurrentOut&&lockKioskCurrentOut.staff.pin===staff.pin) lockKioskCurrentOut=null;
+    staff.status='available';
+    clearInterval(lockKioskTimerInt);
+    addAudit('break','Break In',staff.name+' returned — '+mins+'m');
+    saveToStorage();
+    if(currentPage==='breaks') renderBreaks();
+    lockKioskPin=''; lockKioskState='done';
+    renderLockKiosk();
+    setTimeout(()=>{ lockKioskState='idle'; lockKioskPin=''; lockKioskFoundStaff=null; lockKioskReason=''; renderLockKiosk(); },3000);
+    return;
+  }
+
+  // ── Break Out → reason screen ──
+  lockKioskPin=''; lockKioskReason=''; lockKioskState='reason';
+  renderLockKiosk();
+}
+
+// ══════════════════════════════════════════════
+//  END KIOSK LOCK MODE
+// ══════════════════════════════════════════════
 // ─────────── INIT ───────────
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('modal-overlay')?.addEventListener('click',closeAllModals);
@@ -4031,5 +5864,63 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Always show login for demo
 });
 </script>
+
+<!-- ═══════════════════════════════════════
+     KIOSK LOCK SCREEN (Tablet Entrance Mode)
+═══════════════════════════════════════ -->
+<div id="kiosk-lock-screen">
+
+  <!-- Kiosk header -->
+  <div class="kiosk-header" style="max-width:460px;width:100%;margin-top:12px;flex-shrink:0">
+    <img class="kiosk-logo" src="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" alt="FFC"/>
+    <div><div class="kiosk-title">Fresh Fruits Company</div><div class="kiosk-sub">HORECA · Staff Kiosk</div></div>
+    <div id="lock-clock" class="kiosk-clock">--:--</div>
+  </div>
+
+  <!-- Main kiosk card -->
+  <div class="kiosk-card" id="lock-kiosk-card" style="max-width:460px;width:100%;margin-bottom:12px"></div>
+
+  <!-- Supervisor unlock button (discreet, bottom right) -->
+  <button id="lock-unlock-btn"
+    onclick="openKioskUnlock()"
+    style="position:fixed;bottom:16px;right:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.5);font-size:10px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.4px;z-index:10000">
+    🔒 Supervisor Exit
+  </button>
+
+</div>
+
+<!-- UNLOCK OVERLAY -->
+<div id="kiosk-unlock-overlay">
+  <div style="background:var(--card);border-radius:16px;width:320px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:28px;margin-bottom:6px">🔐</div>
+      <div style="font-size:14px;font-weight:800;color:var(--text)">Supervisor PIN Required</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">Enter supervisor PIN to exit kiosk mode</div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:10px" id="unlock-dots">
+      <div class="pin-dot" id="ud-0"></div>
+      <div class="pin-dot" id="ud-1"></div>
+      <div class="pin-dot" id="ud-2"></div>
+      <div class="pin-dot" id="ud-3"></div>
+    </div>
+    <div style="min-height:16px;text-align:center;font-size:11px;color:var(--ffc-red);font-weight:600;margin-bottom:6px" id="unlock-err"></div>
+    <div class="numpad">
+      <div class="nkey" onclick="unlockPress('1')">1</div>
+      <div class="nkey" onclick="unlockPress('2')">2</div>
+      <div class="nkey" onclick="unlockPress('3')">3</div>
+      <div class="nkey" onclick="unlockPress('4')">4</div>
+      <div class="nkey" onclick="unlockPress('5')">5</div>
+      <div class="nkey" onclick="unlockPress('6')">6</div>
+      <div class="nkey" onclick="unlockPress('7')">7</div>
+      <div class="nkey" onclick="unlockPress('8')">8</div>
+      <div class="nkey" onclick="unlockPress('9')">9</div>
+      <div class="nkey empty"></div>
+      <div class="nkey" onclick="unlockPress('0')">0</div>
+      <div class="nkey del" onclick="unlockPress('del')">⌫</div>
+    </div>
+    <button onclick="closeKioskUnlock()" style="width:100%;margin-top:12px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--text)">Cancel</button>
+  </div>
+</div>
+
 </body>
 </html>
